@@ -7,9 +7,6 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 
-/**
- * Enum de roles
- */
 export enum UserRole {
   ADMIN = 'ADMIN',
   JEFE = 'JEFE',
@@ -34,20 +31,12 @@ export class User {
   })
   role: UserRole;
 
-  /**
-   * JEFE del vendedor
-   * - null para ADMIN y JEFE
-   */
-  @ManyToOne(() => User, (user) => user.sellers, {
-    nullable: true,
-  })
-  boss: User;
+  // Jerarquía
+  @ManyToOne(() => User, (user) => user.vendedores, { nullable: true })
+  jefe: User;
 
-  /**
-   * Vendedores de un JEFE
-   */
-  @OneToMany(() => User, (user) => user.boss)
-  sellers: User[];
+  @OneToMany(() => User, (user) => user.jefe)
+  vendedores: User[];
 
   @CreateDateColumn()
   createdAt: Date;
