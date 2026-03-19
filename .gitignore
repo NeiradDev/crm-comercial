@@ -4,6 +4,8 @@
 /build
 postgres/
 .env
+/pgadmin
+pgadmin/
 # Logs
 logs
 *.log
