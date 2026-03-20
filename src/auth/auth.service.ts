@@ -13,8 +13,23 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
+  /**
+   * =========================================================
+   * LOGIN
+   * ---------------------------------------------------------
+   * Como la columna password ahora tiene select: false,
+   * TypeORM no la trae en consultas normales.
+   *
+   * Por eso aquí usamos QueryBuilder y addSelect()
+   * para traerla SOLO en este punto donde sí es necesaria.
+   * =========================================================
+   */
   async login(email: string, password: string) {
-    const user = await this.userRepository.findOneBy({ email });
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.email = :email', { email })
+      .getOne();
 
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');

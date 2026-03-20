@@ -1,19 +1,27 @@
-
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_GUARD } from '@nestjs/core';
+import { join } from 'path';
 
 import { UsersModule } from './users/users.module';
 import { ClientsModule } from './clients/clients.module';
-
 import { AuthModule } from './auth/auth.module';
-import { RolesGuard } from './auth/roles.guard';  
+
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { RolesGuard } from './auth/roles.guard';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'public'),
+      exclude: ['/api(.*)'],
+    }),
 
     TypeOrmModule.forRoot({
       type: 'postgres',
@@ -27,17 +35,18 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     }),
 
     UsersModule,
-
     ClientsModule,
-
     AuthModule,
-
   ],
-  controllers: [],
-  
   providers: [
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
-    { provide: APP_GUARD, useClass: RolesGuard },
-  ]
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}

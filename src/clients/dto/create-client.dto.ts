@@ -1,21 +1,73 @@
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
 export class CreateClientDto {
+  @IsString({ message: 'nombres debe ser texto' })
   nombres: string;
+
+  @IsString({ message: 'apellidos debe ser texto' })
   apellidos: string;
-  dni?: string;
+
+  @IsString({ message: 'dni debe ser texto' })
+  @Length(5, 20, { message: 'dni debe tener entre 5 y 20 caracteres' })
+  dni: string;
+
+  @IsOptional()
+  @IsString({ message: 'numeroCliente debe ser texto' })
   numeroCliente?: string;
+
+  @IsOptional()
+  @IsString({ message: 'metodoPago debe ser texto' })
   metodoPago?: string;
+
+  @IsOptional()
+  @IsString({ message: 'metodoSeguimiento debe ser texto' })
   metodoSeguimiento?: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'simulacion debe ser true o false' })
   simulacion?: boolean;
+
+  @IsOptional()
+  @IsString({ message: 'tipoCliente debe ser texto' })
   tipoCliente?: string;
+
+  @IsOptional()
+  @IsString({ message: 'resolucion debe ser texto' })
   resolucion?: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'documentacionCompleta debe ser true o false' })
   documentacionCompleta?: boolean;
+
+  @IsOptional()
+  @IsString({ message: 'referencias debe ser texto' })
   referencias?: string;
-  verificacionIdentidad?: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'verificacionIdentidad debe ser true o false' })
+  verificacionIdentidad?: boolean;
+
+  @IsOptional()
+  @IsBoolean({ message: 'facturado debe ser true o false' })
   facturado?: boolean;
+
+  @IsOptional()
+  @IsBoolean({ message: 'despachado debe ser true o false' })
   despachado?: boolean;
+
+  @IsOptional()
+  @IsString({ message: 'observaciones debe ser texto' })
   observaciones?: string;
 
-  // relaciones (por ahora como id)
-  creadoPor: number;
-  vendedorAsignado: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'vendedorAsignadoId debe ser un número entero' })
+  vendedorAsignadoId?: number;
 }

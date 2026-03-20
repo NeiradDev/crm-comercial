@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CRM BESTPC</title>
+  <link rel="stylesheet" href="./assets/css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <img src="/img/logo.png" alt="Logo" class="logo" />
+    <h1>CRM BESTPC</h1>
+    <div class="session">
+      <span id="roleBadge"></span>
+      <button id="logoutBtn" class="btn btn-outline">Salir</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Login -->
+    <section id="loginView" class="card">
+      <h2>Ingreso</h2>
+      <form id="loginForm">
+        <div class="form-row">
+          <label>Email</label>
+          <input id="email" type="email" required placeholder="admin@crm.com"/>
+        </div>
+        <div class="form-row">
+          <label>Contraseña</label>
+          <input id="password" type="password" required placeholder="123"/>
+        </div>
+        <button class="btn btn-primary" type="submit">Entrar</button>
+        <p id="loginError" class="error"></p>
+      </form>
+    </section>
+
+    <!-- Panel -->
+    <section id="appView" class="hidden">
+      <div class="card">
+        <h2>Clientes</h2>
+        <div class="toolbar">
+          <button id="reloadClients" class="btn">Recargar</button>
+          <button id="createClient" class="btn btn-primary">Crear cliente</button>
+        </div>
+        <!-- Modal Crear Cliente -->
+<div id="modalCreate" class="card hidden" style="position:fixed; inset:0; margin:auto; max-width:520px; z-index:1000; border:1px solid #2b3a67">
+  <h3>Crear cliente</h3>
+  <div class="form-row">
+    <label>Nombres</label>
+    <input id="mc_nombres" type="text" placeholder="Nombres" />
+  </div>
+  <div class="form-row">
+    <label>Apellidos</label>
+    <input id="mc_apellidos" type="text" placeholder="Apellidos" />
+  </div>
+  <!-- Solo visible para ADMIN/JEFE -->
+  <div class="form-row" id="mc_row_vendedor" style="display:none">
+    <label>Vendedor asignado</label>
+    <select id="mc_vendedor"></select>
+  </div>
+
+  <div class="toolbar">
+    <button id="mc_cancel" class="btn btn-outline">Cancelar</button>
+    <button id="mc_save" class="btn btn-primary">Guardar</button>
+  </div>
+  <p id="mc_error" class="error"></p>
+</div>
+        <table class="table" id="clientsTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombres</th>
+              <th>Apellidos</th>
+              <th>Vendedor</th>
+              <th>Simulación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="clientsBody">
+            <!-- filas dinámicas -->
+          </tbody>
+        </table>
+        <p id="clientsMsg" class="muted"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="./assets/js/app.js"></script>
+</body>
+</html>

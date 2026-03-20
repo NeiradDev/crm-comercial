@@ -21,7 +21,25 @@ export class User {
   @Column({ unique: true })
   email: string;
 
-  @Column()
+  /**
+   * =========================================================
+   * IMPORTANTE:
+   * ---------------------------------------------------------
+   * select: false hace que TypeORM NO devuelva esta columna
+   * en consultas normales.
+   *
+   * Eso protege endpoints como:
+   * - GET /users
+   * - GET /users/:id
+   *
+   * y también ayuda a que relaciones como jefe/vendedores
+   * no expongan el hash de contraseña.
+   *
+   * Cuando sí necesitemos esta columna (por ejemplo login),
+   * la vamos a pedir manualmente en AuthService.
+   * =========================================================
+   */
+  @Column({ select: false })
   password: string;
 
   @Column({
@@ -31,7 +49,13 @@ export class User {
   })
   role: UserRole;
 
-  // Jerarquía
+  /**
+   * =========================================================
+   * Relación jerárquica:
+   * - un usuario puede tener un jefe
+   * - un jefe puede tener muchos vendedores
+   * =========================================================
+   */
   @ManyToOne(() => User, (user) => user.vendedores, { nullable: true })
   jefe: User;
 
