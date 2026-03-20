@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -13,22 +14,27 @@ export class UsersService {
   ) {}
 
   // ✅ CREATE
-  async create(createUserDto: CreateUserDto) {
-    const { jefeId, ...datos } = createUserDto;
 
-    const user = new User();
-    Object.assign(user, datos);
+async create(createUserDto: CreateUserDto) {
+  const { jefeId, password, ...datos } = createUserDto;
 
-    if (jefeId) {
-      const jefe = await this.userRepository.findOneBy({ id: jefeId });
-      if (!jefe) {
-        throw new NotFoundException('Jefe no existe');
-      }
-      user.jefe = jefe;
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = new User();
+  Object.assign(user, datos);
+  user.password = hashedPassword;
+
+  if (jefeId) {
+    const jefe = await this.userRepository.findOneBy({ id: jefeId });
+    if (!jefe) {
+      throw new NotFoundException('Jefe no existe');
     }
-
-    return this.userRepository.save(user);
+    user.jefe = jefe;
   }
+
+  return this.userRepository.save(user);
+}
+
 
   // ✅ READ ALL
   findAll() {
