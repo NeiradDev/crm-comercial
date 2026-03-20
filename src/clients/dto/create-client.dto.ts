@@ -51,8 +51,8 @@ export class CreateClientDto {
   referencias?: string;
 
   @IsOptional()
-  @IsBoolean({ message: 'verificacionIdentidad debe ser true o false' })
-  verificacionIdentidad?: boolean;
+  @IsString({ message: 'verificacionIdentidad debe ser texto' })
+  verificacionIdentidad?: string;
 
   @IsOptional()
   @IsBoolean({ message: 'facturado debe ser true o false' })
