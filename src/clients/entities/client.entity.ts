@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   CreateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
@@ -27,16 +28,16 @@ export class Client {
 
   // ----- Datos comerciales -----
   @Column({ nullable: true })
-  metodoPago: string; // Cuotas / Contado
+  metodoPago: string;
 
   @Column({ nullable: true })
-  metodoSeguimiento: string; // Llamada / Mensaje
+  metodoSeguimiento: string;
 
   @Column({ default: false })
   simulacion: boolean;
 
   @Column({ nullable: true })
-  tipoCliente: string; // A / B / C2
+  tipoCliente: string;
 
   @Column({ nullable: true })
   resolucion: string;
@@ -61,11 +62,19 @@ export class Client {
   @Column({ type: 'text', nullable: true })
   observaciones: string;
 
+  /**
+   * Solo ADMIN la ve y la modifica
+   */
+  @Column({ default: false })
+  listaNegra: boolean;
+
   // ----- Relaciones -----
   @ManyToOne(() => User, { nullable: false })
+  @JoinColumn({ name: 'creadoPorId' })
   creadoPor: User;
 
   @ManyToOne(() => User, { nullable: false })
+  @JoinColumn({ name: 'vendedorAsignadoId' })
   vendedorAsignado: User;
 
   @CreateDateColumn()

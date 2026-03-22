@@ -24,67 +24,54 @@ export class ClientsService {
   ) {}
 
   /**
-   * =========================================================
-   * CAMPOS PERMITIDOS POR ROL
-   * ---------------------------------------------------------
-   * ADMIN: puede modificar todo
-   * JEFE: puede modificar casi todo y reasignar vendedor
-   * VENDEDOR: solo campos operativos limitados
-   * =========================================================
+   * Campos que JEFE y VENDEDOR no pueden tocar
    */
-  private allowedFieldsByRole(role: UserRole): string[] | 'ALL' {
-    if (role === UserRole.ADMIN) return 'ALL';
+  private readonly protectedFieldsForNonAdmin = [
+    'id',
+    'fechaCreacion',
+    'creadoPor',
+    'creadoPorId',
+    'vendedorAsignado',
+    'vendedorAsignadoId',
+    'listaNegra',
+  ];
 
-    if (role === UserRole.JEFE) {
-      return [
-        'nombres',
-        'apellidos',
-        'dni',
-        'numeroCliente',
-        'metodoPago',
-        'metodoSeguimiento',
-        'simulacion',
-        'tipoCliente',
-        'resolucion',
-        'documentacionCompleta',
-        'referencias',
-        'verificacionIdentidad',
-        'facturado',
-        'despachado',
-        'observaciones',
-        'vendedorAsignadoId',
-      ];
+  private sanitizeClientForRole(client: Client, role: UserRole) {
+    const plain = {
+      ...client,
+      creadoPor: client.creadoPor
+        ? {
+            id: client.creadoPor.id,
+            email: client.creadoPor.email,
+            role: client.creadoPor.role,
+          }
+        : null,
+      vendedorAsignado: client.vendedorAsignado
+        ? {
+            id: client.vendedorAsignado.id,
+            email: client.vendedorAsignado.email,
+            role: client.vendedorAsignado.role,
+          }
+        : null,
+    };
+
+    if (role !== UserRole.ADMIN) {
+      delete (plain as any).listaNegra;
     }
 
-    if (role === UserRole.VENDEDOR) {
-      return [
-        'metodoSeguimiento',
-        'observaciones',
-        'simulacion',
-        'documentacionCompleta',
-        'referencias',
-      ];
-    }
-
-    return [];
+    return plain;
   }
 
-  /**
-   * =========================================================
-   * VALIDA QUE EL DTO NO TRAIGA CAMPOS PROHIBIDOS POR ROL
-   * ---------------------------------------------------------
-   * Antes el sistema los ignoraba silenciosamente.
-   * Ahora los rechazamos con error claro.
-   * =========================================================
-   */
-  private validateRoleAllowedFields(dto: Record<string, any>, role: UserRole): void {
-    const allowed = this.allowedFieldsByRole(role);
+  private sanitizeClientsForRole(clients: Client[], role: UserRole) {
+    return clients.map((client) => this.sanitizeClientForRole(client, role));
+  }
 
-    if (allowed === 'ALL') {
-      return;
-    }
+  private validateProtectedFieldsForNonAdmin(dto: Record<string, any>, role: UserRole): void {
+    if (role === UserRole.ADMIN) return;
 
-    const invalidFields = Object.keys(dto).filter((key) => !allowed.includes(key));
+    const invalidFields = Object.keys(dto).filter((key) =>
+      this.protectedFieldsForNonAdmin.includes(key),
+    );
 
     if (invalidFields.length > 0) {
       throw new ForbiddenException(
@@ -93,11 +80,6 @@ export class ClientsService {
     }
   }
 
-  /**
-   * =========================================================
-   * Obtiene usuario por id
-   * =========================================================
-   */
   private async getUserOrFail(id: number): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id },
@@ -111,11 +93,6 @@ export class ClientsService {
     return user;
   }
 
-  /**
-   * =========================================================
-   * Obtiene vendedores gestionados por un jefe
-   * =========================================================
-   */
   private async getManagedVendorIds(jefeId: number): Promise<number[]> {
     const vendors = await this.userRepository.find({
       where: {
@@ -128,11 +105,6 @@ export class ClientsService {
     return vendors.map((vendor) => vendor.id);
   }
 
-  /**
-   * =========================================================
-   * Verifica acceso a un cliente por rol
-   * =========================================================
-   */
   private async canAccessClient(client: Client, currentUser: CurrentUser): Promise<boolean> {
     if (currentUser.role === UserRole.ADMIN) {
       return true;
@@ -158,15 +130,6 @@ export class ClientsService {
     return false;
   }
 
-  /**
-   * =========================================================
-   * Resuelve el vendedor asignado según rol
-   * ---------------------------------------------------------
-   * VENDEDOR: siempre queda autoasignado a sí mismo
-   * JEFE: solo puede asignar a sus vendedores
-   * ADMIN: puede asignar a cualquier vendedor
-   * =========================================================
-   */
   private async resolveAssignedVendor(
     vendedorAsignadoId: number | undefined,
     currentUser: CurrentUser,
@@ -194,59 +157,72 @@ export class ClientsService {
     return vendedor;
   }
 
-  /**
-   * =========================================================
-   * CREATE
-   * =========================================================
-   */
   async create(dto: CreateClientDto, currentUser: CurrentUser) {
+    this.validateProtectedFieldsForNonAdmin(dto as any, currentUser.role);
+
     const creador = await this.getUserOrFail(currentUser.userId);
     const vendedor = await this.resolveAssignedVendor(dto.vendedorAsignadoId, currentUser);
 
     const client = new Client();
 
-    const { vendedorAsignadoId, ...data } = dto;
+    const { vendedorAsignadoId, ...data } = dto as any;
+
+    if (currentUser.role !== UserRole.ADMIN) {
+      delete data.listaNegra;
+    }
+
     Object.assign(client, data);
 
     client.creadoPor = creador;
     client.vendedorAsignado = vendedor;
 
-    return this.clientRepository.save(client);
+    const saved = await this.clientRepository.save(client);
+
+    const fullSaved = await this.clientRepository.findOne({
+      where: { id: saved.id },
+      relations: ['creadoPor', 'vendedorAsignado'],
+    });
+
+    if (!fullSaved) {
+      throw new NotFoundException('Cliente no existe después de guardar');
+    }
+
+    return this.sanitizeClientForRole(fullSaved, currentUser.role);
   }
 
-  /**
-   * =========================================================
-   * READ ALL
-   * =========================================================
-   */
   async findAll(currentUser: CurrentUser) {
+    let clients: Client[] = [];
+
     if (currentUser.role === UserRole.ADMIN) {
-      return this.clientRepository.find({
+      clients = await this.clientRepository.find({
         relations: ['creadoPor', 'vendedorAsignado'],
       });
+      return this.sanitizeClientsForRole(clients, currentUser.role);
     }
 
     if (currentUser.role === UserRole.VENDEDOR) {
-      return this.clientRepository.find({
+      clients = await this.clientRepository.find({
         where: [
           { creadoPor: { id: currentUser.userId } },
           { vendedorAsignado: { id: currentUser.userId } },
         ],
         relations: ['creadoPor', 'vendedorAsignado'],
       });
+      return this.sanitizeClientsForRole(clients, currentUser.role);
     }
 
     if (currentUser.role === UserRole.JEFE) {
       const managedVendorIds = await this.getManagedVendorIds(currentUser.userId);
 
       if (managedVendorIds.length === 0) {
-        return this.clientRepository.find({
+        clients = await this.clientRepository.find({
           where: [{ creadoPor: { id: currentUser.userId } }],
           relations: ['creadoPor', 'vendedorAsignado'],
         });
+        return this.sanitizeClientsForRole(clients, currentUser.role);
       }
 
-      return this.clientRepository.find({
+      clients = await this.clientRepository.find({
         where: [
           { creadoPor: { id: currentUser.userId } },
           { creadoPor: { id: In(managedVendorIds) as any } },
@@ -254,16 +230,12 @@ export class ClientsService {
         ],
         relations: ['creadoPor', 'vendedorAsignado'],
       });
+      return this.sanitizeClientsForRole(clients, currentUser.role);
     }
 
     return [];
   }
 
-  /**
-   * =========================================================
-   * READ ONE
-   * =========================================================
-   */
   async findOne(id: number, currentUser: CurrentUser) {
     const client = await this.clientRepository.findOne({
       where: { id },
@@ -279,17 +251,9 @@ export class ClientsService {
       throw new ForbiddenException('No tienes permisos para ver este cliente');
     }
 
-    return client;
+    return this.sanitizeClientForRole(client, currentUser.role);
   }
 
-  /**
-   * =========================================================
-   * UPDATE
-   * ---------------------------------------------------------
-   * Ahora ya no se ignoran silenciosamente campos prohibidos.
-   * Si el rol manda uno no permitido, se rechaza.
-   * =========================================================
-   */
   async update(id: number, dto: UpdateClientDto, currentUser: CurrentUser) {
     const client = await this.clientRepository.findOne({
       where: { id },
@@ -305,37 +269,47 @@ export class ClientsService {
       throw new ForbiddenException('No tienes permisos para editar este cliente');
     }
 
-    this.validateRoleAllowedFields(dto, currentUser.role);
+    this.validateProtectedFieldsForNonAdmin(dto as any, currentUser.role);
 
     const { vendedorAsignadoId, ...data } = dto as any;
+
+    if (currentUser.role !== UserRole.ADMIN) {
+      delete data.listaNegra;
+    }
+
     Object.assign(client, data);
 
-    if (
-      (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.JEFE) &&
-      vendedorAsignadoId
-    ) {
+    if (currentUser.role === UserRole.ADMIN && vendedorAsignadoId) {
       client.vendedorAsignado = await this.resolveAssignedVendor(vendedorAsignadoId, currentUser);
     }
 
-    return this.clientRepository.save(client);
+    const saved = await this.clientRepository.save(client);
+
+    const fullSaved = await this.clientRepository.findOne({
+      where: { id: saved.id },
+      relations: ['creadoPor', 'vendedorAsignado'],
+    });
+
+    if (!fullSaved) {
+      throw new NotFoundException('Cliente no existe después de actualizar');
+    }
+
+    return this.sanitizeClientForRole(fullSaved, currentUser.role);
   }
 
-  /**
-   * =========================================================
-   * DELETE
-   * =========================================================
-   */
   async remove(id: number, currentUser: CurrentUser) {
     if (currentUser.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Solo ADMIN puede borrar clientes');
     }
 
     const client = await this.clientRepository.findOneBy({ id });
+
     if (!client) {
       throw new NotFoundException('Cliente no existe');
     }
 
     await this.clientRepository.delete(id);
+
     return { deleted: true };
   }
 }

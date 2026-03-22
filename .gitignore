@@ -1,4 +1,12 @@
 # compiled output
+node_modules
+dist
+coverage
+.env
+
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
 /dist
 /node_modules
 /build

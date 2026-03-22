@@ -70,4 +70,12 @@ export class CreateClientDto {
   @Type(() => Number)
   @IsInt({ message: 'vendedorAsignadoId debe ser un número entero' })
   vendedorAsignadoId?: number;
+
+  /**
+   * El DTO lo acepta, pero el service decide
+   * si el rol puede usarlo o no.
+   */
+  @IsOptional()
+  @IsBoolean({ message: 'listaNegra debe ser true o false' })
+  listaNegra?: boolean;
 }
