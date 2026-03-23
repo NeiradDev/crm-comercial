@@ -264,25 +264,29 @@ function renderTable(clients) {
   clients.forEach((client) => {
     const tr = document.createElement('tr');
 
-    tr.innerHTML = `
-      <td>${client.id}</td>
-      <td>${client.nombres ?? '-'}</td>
-      <td>${client.apellidos ?? '-'}</td>
-      <td>${client.dni ?? '-'}</td>
-      <td>${client.asignadoA?.email ?? '-'}</td>
-      <td>${client.metodoSeguimiento ?? '-'}</td>
-      <td>${client.observaciones ?? '-'}</td>
-      <td>${badgeBoolean(client.simulacion)}</td>
-      ${isAdmin() ? `<td>${badgeBoolean(client.listaNegra)}</td>` : ''}
-      <td>
-        <div class="cell-actions">
-          <!-- NOMBRES BOTONES DE ACCION-->
-          <button class="btn btn-outline" data-follow="${client.id}" type="button">Gestion</button>
-          ${canOpenEdit ? `<button class="btn btn-outline" data-edit="${client.id}" type="button">Editar</button>` : ''}
-          ${canBlacklist ? `<button class="btn btn-danger" data-del="${client.id}" type="button">Lista negra</button>` : ''}
-        </div>
-      </td>
-    `;
+  tr.innerHTML = `
+    <td>${client.id}</td>
+    <td>${client.nombres ?? '-'}</td>
+    <td>${client.apellidos ?? '-'}</td>
+    <td>${client.dni ?? '-'}</td>
+    <td>${client.asignadoA?.email ?? '-'}</td>
+    <td>${client.metodoSeguimiento ?? '-'}</td>
+
+    <!-- CAMBIO FUTURO: nueva columna visible con días desde la última gestión -->
+    <td>${client.diasDesdeUltimaGestion ?? '-'}</td>
+
+    <td>${client.observaciones ?? '-'}</td>
+    <td>${badgeBoolean(client.simulacion)}</td>
+    ${isAdmin() ? `<td>${badgeBoolean(client.listaNegra)}</td>` : ''}
+    <td>
+      <div class="cell-actions">
+        <!-- NOMBRES BOTONES DE ACCION -->
+        <button class="btn btn-outline" data-follow="${client.id}" type="button">Gestion</button>
+        ${canOpenEdit ? `<button class="btn btn-outline" data-edit="${client.id}" type="button">Editar</button>` : ''}
+        ${canBlacklist ? `<button class="btn btn-danger" data-del="${client.id}" type="button">Lista negra</button>` : ''}
+      </div>
+    </td>
+  `;
 
     clientsBody.appendChild(tr);
   });

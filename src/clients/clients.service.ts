@@ -25,6 +25,9 @@ export class ClientsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     
+    // CAMBIO FUTURO: repository de seguimientos para calcular días desde última gestión
+    @InjectRepository(SeguimientoCliente)
+    private readonly seguimientoRepository: Repository<SeguimientoCliente>,
   ) {}
 
   /**
@@ -39,8 +42,7 @@ export class ClientsService {
     'creadoPorId',
     'listaNegra',
   ];
-
-  /**
+    /**
    * =========================================================
    * Mapper User -> UserSummaryDto
    * =========================================================
@@ -61,10 +63,61 @@ export class ClientsService {
 
   /**
    * =========================================================
-   * Mapper Client -> ClientResponseDto
+   * Obtiene la última gestión de un cliente
+   * ---------------------------------------------------------
+   * Usa la columna "fecha" de seguimiento-cliente.
    * =========================================================
    */
-  private mapClientResponse(client: Client, role: UserRole): ClientResponseDto {
+  private async getUltimoSeguimiento(clientId: number): Promise<SeguimientoCliente | null> {
+    return this.seguimientoRepository.findOne({
+      where: { client: { id: clientId } },
+      order: { fecha: 'DESC', id: 'DESC' },
+      relations: ['client'],
+    });
+  }
+
+  /**
+   * =========================================================
+   * Calcula días desde una fecha hasta hoy
+   * =========================================================
+   */
+  private calculateDaysSince(fecha: string | null | undefined): number | null {
+    if (!fecha) return null;
+
+    const start = new Date(`${fecha}T00:00:00`);
+    const today = new Date();
+
+    const todayOnly = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+
+    const startOnly = new Date(
+      start.getFullYear(),
+      start.getMonth(),
+      start.getDate(),
+    );
+
+    const diffMs = todayOnly.getTime() - startOnly.getTime();
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  }
+
+  /**
+   * =========================================================
+   * Mapper Client -> ClientResponseDto
+   * ---------------------------------------------------------
+   * CAMBIO FUTURO: ahora también calcula días desde
+   * la última gestión.
+   * =========================================================
+   */
+  private async mapClientResponse(
+    client: Client,
+    role: UserRole,
+  ): Promise<ClientResponseDto> {
+    const ultimoSeguimiento = await this.getUltimoSeguimiento(client.id);
+    const diasDesdeUltimaGestion = this.calculateDaysSince(ultimoSeguimiento?.fecha);
+
     const dto: ClientResponseDto = {
       id: client.id,
       nombres: client.nombres,
@@ -85,6 +138,9 @@ export class ClientsService {
       fechaCreacion: client.fechaCreacion,
       creadoPor: this.mapUserSummary(client.creadoPor),
       asignadoA: this.mapUserSummary(client.asignadoA),
+
+      // CAMBIO FUTURO: nueva métrica visible en tabla de clientes
+      diasDesdeUltimaGestion,
     };
 
     if (role === UserRole.ADMIN) {
@@ -94,10 +150,19 @@ export class ClientsService {
     return dto;
   }
 
-  private mapClientsResponse(clients: Client[], role: UserRole): ClientResponseDto[] {
-    return clients.map((client) => this.mapClientResponse(client, role));
+  /**
+   * =========================================================
+   * Mapper lista de clientes
+   * =========================================================
+   */
+  private async mapClientsResponse(
+    clients: Client[],
+    role: UserRole,
+  ): Promise<ClientResponseDto[]> {
+    return Promise.all(
+      clients.map((client) => this.mapClientResponse(client, role)),
+    );
   }
-
   /**
    * =========================================================
    * Obtener usuario activo por id
@@ -342,7 +407,7 @@ export class ClientsService {
 
     return this.mapClientResponse(fullSaved, currentUser.role);
   }
-
+  
   /**
    * =========================================================
    * READ ALL
@@ -493,7 +558,6 @@ export class ClientsService {
 
     return this.mapClientResponse(fullSaved, currentUser.role);
   }
-
   /**
    * =========================================================
    * DELETE LÓGICO
