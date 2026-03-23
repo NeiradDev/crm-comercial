@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CRM BESTPC | Jefe</title>
+
+  <link rel="stylesheet" href="./assets/css/style.css" />
+  <link rel="stylesheet" href="./assets/css/auth.css" />
+  <link rel="stylesheet" href="./assets/css/clients.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="/img/logo.png" alt="Logo" class="logo" />
+      <div>
+        <h1>CRM BESTPC</h1>
+        <p class="subtitle">Panel jefe</p>
+      </div>
+    </div>
+
+    <div class="session">
+      <span id="roleBadge"></span>
+      <button id="logoutBtn" class="btn btn-outline" type="button">Salir</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <div class="toolbar wrap" id="navTabs">
+        <button id="tabClients" class="btn btn-primary" type="button">Clientes</button>
+        <button id="tabUsers" class="btn" type="button">Mis vendedores</button>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <section id="clientsSection">
+      <div class="card">
+        <div class="section-head section-head-inline">
+          <div>
+            <h2>Clientes</h2>
+            <p class="muted" id="clientsMsg">Cargando...</p>
+          </div>
+
+          <div class="toolbar wrap">
+            <button id="reloadClients" class="btn" type="button">Recargar</button>
+            <button id="createClient" class="btn btn-primary" type="button">Crear cliente</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombres</th>
+                <th>Apellidos</th>
+                <th>DNI</th>
+                <th>Vendedor</th>
+                <th>Seguimiento</th>
+                <th>Observaciones</th>
+                <th>Simulación</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="clientsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- MIS VENDEDORES -->
+    <section id="usersSection" class="hidden">
+      <div class="card">
+        <div class="section-head section-head-inline">
+          <div>
+            <h2>Mis vendedores</h2>
+            <p class="muted" id="vendorsMsg">Cargando...</p>
+          </div>
+
+          <div class="toolbar wrap">
+            <button id="reloadVendors" class="btn" type="button">Recargar</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Jefe</th>
+                <th>Creado</th>
+              </tr>
+            </thead>
+            <tbody id="vendorsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="modalOverlay" class="modal-overlay hidden"></div>
+
+  <!-- MODAL CLIENTE -->
+  <section id="clientModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="section-head section-head-inline">
+        <div>
+          <h3 id="clientModalTitle">Crear cliente</h3>
+          <p class="muted" id="clientModalSubtitle">Completa los datos necesarios.</p>
+        </div>
+        <button id="clientModalClose" class="btn btn-outline" type="button">Cerrar</button>
+      </div>
+
+      <form id="clientForm" class="form-grid">
+        <input id="clientId" type="hidden" />
+
+        <div class="form-row"><label for="cf_nombres">Nombres</label><input id="cf_nombres" type="text" /></div>
+        <div class="form-row"><label for="cf_apellidos">Apellidos</label><input id="cf_apellidos" type="text" /></div>
+        <div class="form-row"><label for="cf_dni">DNI</label><input id="cf_dni" type="text" /></div>
+        <div class="form-row"><label for="cf_metodoPago">Método de pago</label><input id="cf_metodoPago" type="text" /></div>
+        <div class="form-row"><label for="cf_metodoSeguimiento">Método de seguimiento</label><input id="cf_metodoSeguimiento" type="text" /></div>
+        <div class="form-row"><label for="cf_observaciones">Observaciones</label><textarea id="cf_observaciones" rows="4"></textarea></div>
+
+        <div class="form-row checkbox-row">
+          <label class="checkbox-inline">
+            <input id="cf_simulacion" type="checkbox" />
+            <span>Simulación</span>
+          </label>
+        </div>
+
+        <div class="form-row hidden" id="row_listaNegra">
+          <label class="checkbox-inline">
+            <input id="cf_listaNegra" type="checkbox" />
+            <span>Lista negra</span>
+          </label>
+        </div>
+
+        <div class="form-row" id="row_vendedor">
+          <label for="cf_vendedor">Asignado a</label>
+          <select id="cf_vendedor"></select>
+        </div>
+
+        <p id="clientFormError" class="error"></p>
+
+        <div class="toolbar wrap">
+          <button id="clientCancelBtn" class="btn btn-outline" type="button">Cancelar</button>
+          <button id="clientSaveBtn" class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- MODAL SEGUIMIENTOS -->
+  <section id="followUpModal" class="modal hidden">
+    <div class="modal-card modal-card-lg">
+      <div class="section-head section-head-inline">
+        <div>
+          <h3 id="followUpModalTitle">Seguimientos del cliente</h3>
+          <p class="muted" id="followUpClientInfo">Cliente seleccionado</p>
+        </div>
+
+        <div class="toolbar wrap">
+          <button id="openFollowUpFormBtn" class="btn btn-primary" type="button">Nuevo seguimiento</button>
+          <button id="followUpModalClose" class="btn btn-outline" type="button">Cerrar</button>
+        </div>
+      </div>
+
+      <div id="followUpListView">
+        <p id="followUpMsg" class="muted">Cargando seguimientos...</p>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Número cliente</th>
+                <th>Origen</th>
+                <th>Método pago</th>
+                <th>Insistencia</th>
+                <th>Simulación</th>
+                <th>Resolución</th>
+                <th>Facturado</th>
+                <th>Despachado</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody id="followUpBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="followUpFormView" class="hidden">
+        <form id="followUpForm" class="form-grid">
+          <input id="fu_clientId" type="hidden" />
+          <input id="fu_id" type="hidden" />
+
+          <div class="form-row"><label for="fu_fecha">Fecha</label><input id="fu_fecha" type="date" /></div>
+          <div class="form-row"><label for="fu_numeroCliente">Número del cliente</label><input id="fu_numeroCliente" type="text" /></div>
+          <div class="form-row"><label for="fu_origen">Origen</label><select id="fu_origen"></select></div>
+          <div class="form-row"><label for="fu_metodoPago">Método de pago</label><select id="fu_metodoPago"></select></div>
+          <div class="form-row"><label for="fu_insistencia">Insistencia</label><select id="fu_insistencia"></select></div>
+          <div class="form-row"><label for="fu_simulacion">Simulación</label><select id="fu_simulacion"></select></div>
+          <div class="form-row"><label for="fu_tipoCliente">Tipo de cliente</label><select id="fu_tipoCliente"></select></div>
+          <div class="form-row"><label for="fu_resolucion">Resolución</label><select id="fu_resolucion"></select></div>
+          <div class="form-row"><label for="fu_documentacion">Documentación</label><select id="fu_documentacion"></select></div>
+          <div class="form-row"><label for="fu_referencias">Referencias</label><select id="fu_referencias"></select></div>
+          <div class="form-row"><label for="fu_verificacionIdentidad">Verificación identidad</label><select id="fu_verificacionIdentidad"></select></div>
+          <div class="form-row"><label for="fu_facturado">Facturado</label><select id="fu_facturado"></select></div>
+          <div class="form-row"><label for="fu_despachado">Despachado</label><select id="fu_despachado"></select></div>
+          <div class="form-row form-row-full"><label for="fu_observaciones">Observaciones</label><textarea id="fu_observaciones" rows="4"></textarea></div>
+
+          <p id="followUpFormError" class="error"></p>
+
+          <div class="toolbar wrap">
+            <button id="followUpBackBtn" class="btn btn-outline" type="button">Volver</button>
+            <button id="followUpSaveBtn" class="btn btn-primary" type="submit">Guardar seguimiento</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="./assets/js/jefe.js"></script>
+</body>
+</html>

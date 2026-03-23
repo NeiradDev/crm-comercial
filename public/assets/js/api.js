@@ -1,14 +1,23 @@
 import { getAuthHeaders } from './session.js';
 
+/**
+ * =========================================================
+ * Parser central de respuestas HTTP
+ * =========================================================
+ */
 async function parseResponse(res) {
   const contentType = res.headers.get('content-type') || '';
   const isJson = contentType.includes('application/json');
-  const data = isJson ? await res.json().catch(() => ({})) : await res.text().catch(() => '');
+
+  const data = isJson
+    ? await res.json().catch(() => ({}))
+    : await res.text().catch(() => '');
 
   if (!res.ok) {
     const message = Array.isArray(data?.message)
       ? data.message.join('\n')
       : data?.message || data?.error || 'Ocurrió un error en la petición';
+
     throw new Error(message);
   }
 
@@ -16,6 +25,11 @@ async function parseResponse(res) {
 }
 
 export const api = {
+  /**
+   * =========================================================
+   * AUTH
+   * =========================================================
+   */
   async login(email, password) {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -26,6 +40,11 @@ export const api = {
     return parseResponse(res);
   },
 
+  /**
+   * =========================================================
+   * CLIENTS
+   * =========================================================
+   */
   async listClients() {
     const res = await fetch('/api/clients', {
       headers: { ...getAuthHeaders() },
@@ -77,6 +96,67 @@ export const api = {
     return parseResponse(res);
   },
 
+  /**
+   * =========================================================
+   * Destinos asignables
+   * ---------------------------------------------------------
+   * ADMIN    -> jefes + vendedores
+   * JEFE     -> él mismo + sus vendedores
+   * CARGADOR -> jefes
+   * =========================================================
+   */
+  async listAssignableTargets() {
+    const res = await fetch('/api/clients/assignable-targets', {
+      headers: { ...getAuthHeaders() },
+    });
+
+    return parseResponse(res);
+  },
+
+  /**
+   * =========================================================
+   * FOLLOW UPS
+   * =========================================================
+   */
+  async listFollowUpsByClient(clientId) {
+    const res = await fetch(`/api/seguimiento-cliente/client/${clientId}`, {
+      headers: { ...getAuthHeaders() },
+    });
+
+    return parseResponse(res);
+  },
+
+  async createFollowUp(body) {
+    const res = await fetch('/api/seguimiento-cliente', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(body),
+    });
+
+    return parseResponse(res);
+  },
+
+  async updateFollowUp(id, body) {
+    const res = await fetch(`/api/seguimiento-cliente/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(body),
+    });
+
+    return parseResponse(res);
+  },
+
+  /**
+   * =========================================================
+   * USERS
+   * =========================================================
+   */
   async listUsers() {
     const res = await fetch('/api/users', {
       headers: { ...getAuthHeaders() },
@@ -85,9 +165,35 @@ export const api = {
     return parseResponse(res);
   },
 
-    async listAssignableVendors() {
-    const res = await fetch('/api/clients/assignable-vendors', {
+  async listMyVendors() {
+    const res = await fetch('/api/users/my-vendors', {
       headers: { ...getAuthHeaders() },
+    });
+
+    return parseResponse(res);
+  },
+
+  async createUser(body) {
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(body),
+    });
+
+    return parseResponse(res);
+  },
+
+  async updateUser(id, body) {
+    const res = await fetch(`/api/users/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(body),
     });
 
     return parseResponse(res);

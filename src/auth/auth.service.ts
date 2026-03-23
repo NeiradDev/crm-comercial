@@ -17,11 +17,10 @@ export class AuthService {
    * =========================================================
    * LOGIN
    * ---------------------------------------------------------
-   * Como la columna password ahora tiene select: false,
-   * TypeORM no la trae en consultas normales.
-   *
-   * Por eso aquí usamos QueryBuilder y addSelect()
-   * para traerla SOLO en este punto donde sí es necesaria.
+   * - trae password manualmente porque tiene select:false
+   * - valida existencia
+   * - valida activo
+   * - valida password
    * =========================================================
    */
   async login(email: string, password: string) {
@@ -33,6 +32,10 @@ export class AuthService {
 
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    if (!user.activo) {
+      throw new UnauthorizedException('Usuario inactivo');
     }
 
     const passwordOk = await bcrypt.compare(password, user.password);
@@ -49,8 +52,12 @@ export class AuthService {
       accessToken: this.jwtService.sign(payload),
       user: {
         id: user.id,
+        nombre: user.nombre,
+        apellido: user.apellido,
+        cedula: user.cedula,
         email: user.email,
         role: user.role,
+        activo: user.activo,
       },
     };
   }

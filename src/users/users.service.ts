@@ -1,10 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
+import { UserSummaryDto } from './dto/user-summary.dto';
 import * as bcrypt from 'bcrypt';
+
 
 @Injectable()
 export class UsersService {
@@ -15,12 +18,51 @@ export class UsersService {
 
   /**
    * =========================================================
-   * CREATE
-   * ---------------------------------------------------------
-   * Crea usuario, hashea la contraseña y asigna jefe si llega.
+   * Mapper resumido
    * =========================================================
    */
-  async create(createUserDto: CreateUserDto) {
+  private mapUserSummary(user: User | null | undefined): UserSummaryDto | null {
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      cedula: user.cedula,
+      email: user.email,
+      role: user.role,
+      activo: user.activo,
+    };
+  }
+
+  /**
+   * =========================================================
+   * Mapper completo
+   * =========================================================
+   */
+  private mapUserResponse(user: User): UserResponseDto {
+    return {
+      id: user.id,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      cedula: user.cedula,
+      email: user.email,
+      role: user.role,
+      activo: user.activo,
+      jefe: this.mapUserSummary(user.jefe),
+      vendedores: Array.isArray(user.vendedores)
+        ? user.vendedores.map((vendor) => this.mapUserSummary(vendor)!)
+        : [],
+      createdAt: user.createdAt,
+    };
+  }
+
+  /**
+   * =========================================================
+   * CREATE
+   * =========================================================
+   */
+  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const { jefeId, password, ...datos } = createUserDto;
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -28,6 +70,13 @@ export class UsersService {
     const user = new User();
     Object.assign(user, datos);
     user.password = hashedPassword;
+
+    /**
+     * Si no mandan activo, la entidad usa true por defecto.
+     */
+    if (typeof createUserDto.activo === 'boolean') {
+      user.activo = createUserDto.activo;
+    }
 
     if (jefeId) {
       const jefe = await this.userRepository.findOneBy({ id: jefeId });
@@ -39,16 +88,6 @@ export class UsersService {
       user.jefe = jefe;
     }
 
-    /**
-     * =========================================================
-     * Al guardar, TypeORM devuelve la entidad persistida.
-     * Como password tiene select: false, normalmente en futuras
-     * consultas ya no saldrá. Aquí podría venir en memoria,
-     * pero lo seguro es volver a consultar si quieres respuesta
-     * limpia. Para mantenerlo simple, guardamos y volvemos
-     * a pedirlo sin password.
-     * =========================================================
-     */
     const savedUser = await this.userRepository.save(user);
 
     return this.findOne(savedUser.id);
@@ -56,25 +95,60 @@ export class UsersService {
 
   /**
    * =========================================================
-   * READ ALL
-   * ---------------------------------------------------------
-   * Gracias a select: false, password ya no debe salir.
+   * SEED ADMIN
    * =========================================================
    */
-  findAll() {
-    return this.userRepository.find({
+  
+  async onModuleInit() {
+    await this.seedAdmin();
+  }
+
+  async seedAdmin() {
+    const exists = await this.userRepository.findOne({
+      where: { email: 'admin@test.com' },
+    });
+
+    if (exists) {
+      console.log('Admin ya existe');
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash('123', 10);
+
+    const admin = this.userRepository.create({
+      email: 'admin@test.com',
+      password: hashedPassword,
+      nombre: 'Admin',
+      apellido: 'Root',
+      cedula: '0000000000',
+      role: UserRole.ADMIN,
+      activo: true,
+    });
+
+    await this.userRepository.save(admin);
+
+    console.log('Admin creado correctamente');
+  }
+
+  /**
+   * =========================================================
+   * READ ALL
+   * =========================================================
+   */
+  async findAll(): Promise<UserResponseDto[]> {
+    const users = await this.userRepository.find({
       relations: ['jefe', 'vendedores'],
     });
+
+    return users.map((user) => this.mapUserResponse(user));
   }
 
   /**
    * =========================================================
    * READ ONE
-   * ---------------------------------------------------------
-   * Busca un usuario por id y lanza error si no existe.
    * =========================================================
    */
-  async findOne(id: number) {
+  async findOne(id: number): Promise<UserResponseDto> {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: ['jefe', 'vendedores'],
@@ -84,55 +158,88 @@ export class UsersService {
       throw new NotFoundException('Usuario no existe');
     }
 
-    return user;
+    return this.mapUserResponse(user);
   }
 
   /**
    * =========================================================
    * UPDATE
-   * ---------------------------------------------------------
-   * Actualiza datos básicos y permite reasignar jefe.
    * =========================================================
    */
-async update(id: number, updateUserDto: UpdateUserDto) {
-  const user = await this.userRepository.findOne({
-    where: { id },
-    relations: ['jefe'],
-  });
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['jefe'],
+    });
 
-  if (!user) {
-    throw new NotFoundException('Usuario no existe');
-  }
-
-  const { jefeId, password, ...datos } = updateUserDto;
-  Object.assign(user, datos);
-
-  if (typeof password === 'string' && password.trim() !== '') {
-    user.password = await bcrypt.hash(password, 10);
-  }
-
-  if (jefeId) {
-    const jefe = await this.userRepository.findOneBy({ id: jefeId });
-
-    if (!jefe) {
-      throw new NotFoundException('Jefe no existe');
+    if (!user) {
+      throw new NotFoundException('Usuario no existe');
     }
 
-    user.jefe = jefe;
+    const { jefeId, password, ...datos } = updateUserDto;
+    Object.assign(user, datos);
+
+    if (typeof password === 'string' && password.trim() !== '') {
+      user.password = await bcrypt.hash(password, 10);
+    }
+
+    if (typeof updateUserDto.activo === 'boolean') {
+      user.activo = updateUserDto.activo;
+    }
+
+    if (jefeId) {
+      const jefe = await this.userRepository.findOneBy({ id: jefeId });
+
+      if (!jefe) {
+        throw new NotFoundException('Jefe no existe');
+      }
+
+      user.jefe = jefe;
+    }
+
+    await this.userRepository.save(user);
+
+    return this.findOne(id);
   }
-
-  await this.userRepository.save(user);
-
-  return this.findOne(id);
-}
 
   /**
    * =========================================================
-   * DELETE
+   * DESACTIVAR EN LUGAR DE ELIMINAR
+   * ---------------------------------------------------------
+   * No se borra físicamente el usuario.
    * =========================================================
    */
   async remove(id: number) {
-    await this.userRepository.delete(id);
-    return { deleted: true };
+    const user = await this.userRepository.findOneBy({ id });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no existe');
+    }
+
+    user.activo = false;
+    await this.userRepository.save(user);
+
+    return {
+      deactivated: true,
+      id: user.id,
+    };
   }
+
+  /**
+   * =========================================================
+   * JEFE → obtener sus vendedores
+   * =========================================================
+   */
+  async getMyVendors(jefeId: number): Promise<UserResponseDto[]> {
+    const vendors = await this.userRepository.find({
+      where: {
+        jefe: { id: jefeId },
+        role: UserRole.VENDEDOR,
+      },
+      relations: ['jefe', 'vendedores'],
+    });
+
+    return vendors.map((user) => this.mapUserResponse(user));
+  }
+  
 }

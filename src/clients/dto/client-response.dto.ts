@@ -5,20 +5,24 @@ export class ClientResponseDto {
   nombres: string;
   apellidos: string;
   dni: string;
-  numeroCliente?: string;
-  metodoPago?: string;
-  metodoSeguimiento?: string;
+  numeroCliente?: string | null;
+  metodoPago?: string | null;
+  metodoSeguimiento?: string | null;
   simulacion: boolean;
-  tipoCliente?: string;
-  resolucion?: string;
+  tipoCliente?: string | null;
+  resolucion?: string | null;
   documentacionCompleta: boolean;
-  referencias?: string;
-  verificacionIdentidad?: string;
+  referencias?: string | null;
+  verificacionIdentidad?: string | null;
   facturado: boolean;
   despachado: boolean;
-  observaciones?: string;
+  observaciones?: string | null;
   fechaCreacion: Date;
   creadoPor: UserSummaryDto | null;
-  vendedorAsignado: UserSummaryDto | null;
+  asignadoA: UserSummaryDto | null;
+
+  /**
+   * Solo ADMIN lo ve.
+   */
   listaNegra?: boolean;
 }

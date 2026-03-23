@@ -1,7 +1,13 @@
 import { api } from './api.js';
 import { getSession, isAdmin, isJefe, isVendedor } from './session.js';
 import { $, badgeBoolean, confirmAction, setHidden, showError } from './ui.js';
+import { openFollowUpModal } from './seguimientos.js';
 
+/**
+ * =========================================================
+ * Referencias del módulo clientes
+ * =========================================================
+ */
 const clientsBody = $('#clientsBody');
 const clientsMsg = $('#clientsMsg');
 const reloadBtn = $('#reloadClients');
@@ -31,56 +37,19 @@ const row_vendedor = $('#row_vendedor');
 const row_listaNegra = $('#row_listaNegra');
 
 let currentClients = [];
+let currentAssignableTargets = [];
 
-function getCreatePayload() {
-  const payload = {
-    nombres: cf_nombres.value.trim(),
-    apellidos: cf_apellidos.value.trim(),
-    dni: cf_dni.value.trim(),
-    metodoPago: cf_metodoPago.value.trim() || undefined,
-    metodoSeguimiento: cf_metodoSeguimiento.value.trim() || undefined,
-    observaciones: cf_observaciones.value.trim() || undefined,
-    simulacion: cf_simulacion.checked,
-  };
-
-  if (isAdmin()) {
-    payload.listaNegra = cf_listaNegra.checked;
-  }
-
-  if (isAdmin() || isJefe()) {
-    const sellerId = Number(cf_vendedor.value || 0);
-    if (sellerId) {
-      payload.vendedorAsignadoId = sellerId;
-    }
-  }
-
-  return payload;
+/**
+ * =========================================================
+ * Helpers
+ * =========================================================
+ */
+function getCurrentRole() {
+  return getSession().role;
 }
 
-function getUpdatePayload() {
-  const payload = {
-    nombres: cf_nombres.value.trim(),
-    apellidos: cf_apellidos.value.trim(),
-    dni: cf_dni.value.trim(),
-    metodoPago: cf_metodoPago.value.trim() || undefined,
-    metodoSeguimiento: cf_metodoSeguimiento.value.trim() || undefined,
-    observaciones: cf_observaciones.value.trim() || undefined,
-    simulacion: cf_simulacion.checked,
-  };
-
-  if (isAdmin()) {
-    payload.listaNegra = cf_listaNegra.checked;
-    const sellerId = Number(cf_vendedor.value || 0);
-    if (sellerId) {
-      payload.vendedorAsignadoId = sellerId;
-    }
-  }
-
-  return payload;
-}
-
-async function fetchSellers() {
-  return api.listAssignableVendors();
+function isCargador() {
+  return getCurrentRole() === 'CARGADOR';
 }
 
 function resetForm() {
@@ -97,40 +66,165 @@ function resetForm() {
   showError(clientFormError, '');
 }
 
-async function populateSellerSelect(selectedId = null) {
-  cf_vendedor.innerHTML = '<option value="">Seleccione un vendedor</option>';
+function closeModal() {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
 
-  const sellers = await fetchSellers();
-  sellers.forEach((seller) => {
+  setHidden(modal, true);
+  setHidden(overlay, true);
+}
+
+/**
+ * =========================================================
+ * Destinos asignables
+ * =========================================================
+ */
+async function fetchAssignableTargets() {
+  currentAssignableTargets = await api.listAssignableTargets();
+  return currentAssignableTargets;
+}
+
+async function populateAssignableTargetSelect(selectedId = null) {
+  cf_vendedor.innerHTML = '<option value="">Seleccione un destino</option>';
+
+  const targets = await fetchAssignableTargets();
+
+  targets.forEach((target) => {
     const option = document.createElement('option');
-    option.value = String(seller.id);
-    option.textContent = `${seller.email} (id: ${seller.id})`;
-    if (selectedId && seller.id === selectedId) {
+    option.value = String(target.id);
+    option.textContent = `${target.nombre} ${target.apellido} | ${target.email} | ${target.role}`;
+
+    if (selectedId && target.id === selectedId) {
       option.selected = true;
     }
+
     cf_vendedor.appendChild(option);
   });
 }
 
+/**
+ * =========================================================
+ * Payload CREATE
+ * =========================================================
+ */
+function getCreatePayload() {
+  const payload = {
+    nombres: cf_nombres.value.trim(),
+    apellidos: cf_apellidos.value.trim(),
+    dni: cf_dni.value.trim(),
+    metodoPago: cf_metodoPago.value.trim() || undefined,
+    metodoSeguimiento: cf_metodoSeguimiento.value.trim() || undefined,
+    observaciones: cf_observaciones.value.trim() || undefined,
+    simulacion: cf_simulacion.checked,
+  };
+
+  /**
+   * Solo ADMIN puede gestionar lista negra
+   */
+  if (isAdmin()) {
+    payload.listaNegra = cf_listaNegra.checked;
+  }
+
+  /**
+   * ADMIN, JEFE y CARGADOR pueden asignar destino.
+   * VENDEDOR no manda asignadoAId: backend lo autoasigna.
+   */
+  if (isAdmin() || isJefe() || isCargador()) {
+    const targetId = Number(cf_vendedor.value || 0);
+    if (targetId) {
+      payload.asignadoAId = targetId;
+    }
+  }
+
+  return payload;
+}
+
+/**
+ * =========================================================
+ * Payload UPDATE
+ * =========================================================
+ */
+function getUpdatePayload() {
+  const payload = {
+    nombres: cf_nombres.value.trim(),
+    apellidos: cf_apellidos.value.trim(),
+    dni: cf_dni.value.trim(),
+    metodoPago: cf_metodoPago.value.trim() || undefined,
+    metodoSeguimiento: cf_metodoSeguimiento.value.trim() || undefined,
+    observaciones: cf_observaciones.value.trim() || undefined,
+    simulacion: cf_simulacion.checked,
+  };
+
+  /**
+   * Solo ADMIN puede tocar lista negra
+   */
+  if (isAdmin()) {
+    payload.listaNegra = cf_listaNegra.checked;
+  }
+
+  /**
+   * ADMIN y JEFE pueden reasignar
+   * VENDEDOR no
+   * CARGADOR no edita clientes asignados
+   */
+  if (isAdmin() || isJefe()) {
+    const targetId = Number(cf_vendedor.value || 0);
+    if (targetId) {
+      payload.asignadoAId = targetId;
+    }
+  }
+
+  return payload;
+}
+
+/**
+ * =========================================================
+ * Abrir modal crear
+ * ---------------------------------------------------------
+ * ADMIN    -> ve listaNegra + selector destino
+ * JEFE     -> no ve listaNegra, sí ve selector
+ * CARGADOR -> no ve listaNegra, sí ve selector
+ * VENDEDOR -> no ve listaNegra, no ve selector
+ * =========================================================
+ */
 async function openCreateModal() {
   resetForm();
   modalTitle.textContent = 'Crear cliente';
-  modalSubtitle.textContent = 'Registra un nuevo cliente según tu rol.';
-  setHidden(row_listaNegra, !isAdmin());
-  setHidden(row_vendedor, !(isAdmin() || isJefe()));
+  modalSubtitle.textContent = 'Completa los datos necesarios.';
 
-  if (isAdmin() || isJefe()) {
-    await populateSellerSelect();
+  setHidden(row_listaNegra, !isAdmin());
+  setHidden(row_vendedor, !(isAdmin() || isJefe() || isCargador()));
+
+  try {
+    if (isAdmin() || isJefe() || isCargador()) {
+      await populateAssignableTargetSelect();
+    }
+  } catch (error) {
+    showError(clientFormError, error.message);
   }
 
   setHidden(modal, false);
   setHidden(overlay, false);
 }
 
+/**
+ * =========================================================
+ * Abrir modal editar
+ * ---------------------------------------------------------
+ * ADMIN -> puede cambiar destino y lista negra
+ * JEFE  -> puede cambiar destino
+ * VENDEDOR -> no cambia destino
+ * CARGADOR -> no debería editar asignados
+ * =========================================================
+ */
 async function openEditModal(id) {
-  const client = currentClients.find((item) => item.id === id) || await api.getClientById(id);
+  const client =
+    currentClients.find((item) => item.id === id) ||
+    (await api.getClientById(id));
 
   resetForm();
+
   clientId.value = String(client.id);
   modalTitle.textContent = `Editar cliente #${client.id}`;
   modalSubtitle.textContent = 'Actualiza los datos permitidos para tu rol.';
@@ -145,26 +239,26 @@ async function openEditModal(id) {
   cf_listaNegra.checked = Boolean(client.listaNegra);
 
   setHidden(row_listaNegra, !isAdmin());
-  setHidden(row_vendedor, !isAdmin());
+  setHidden(row_vendedor, !(isAdmin() || isJefe()));
 
-  if (isAdmin()) {
-    await populateSellerSelect(client.vendedorAsignado?.id ?? null);
+  if (isAdmin() || isJefe()) {
+    await populateAssignableTargetSelect(client.asignadoA?.id ?? null);
   }
 
   setHidden(modal, false);
   setHidden(overlay, false);
 }
 
-function closeModal() {
-  setHidden(modal, true);
-  setHidden(overlay, true);
-}
-
+/**
+ * =========================================================
+ * Render tabla
+ * =========================================================
+ */
 function renderTable(clients) {
-  const role = getSession().role;
-  const canDelete = isAdmin();
+  const canBlacklist = isAdmin();
+  const canOpenEdit = !isCargador();
 
-  setHidden(blacklistHead, role !== 'ADMIN');
+  setHidden(blacklistHead, !isAdmin());
   clientsBody.innerHTML = '';
 
   clients.forEach((client) => {
@@ -175,20 +269,32 @@ function renderTable(clients) {
       <td>${client.nombres ?? '-'}</td>
       <td>${client.apellidos ?? '-'}</td>
       <td>${client.dni ?? '-'}</td>
-      <td>${client.vendedorAsignado?.email ?? '-'}</td>
+      <td>${client.asignadoA?.email ?? '-'}</td>
       <td>${client.metodoSeguimiento ?? '-'}</td>
       <td>${client.observaciones ?? '-'}</td>
       <td>${badgeBoolean(client.simulacion)}</td>
-      ${role === 'ADMIN' ? `<td>${badgeBoolean(client.listaNegra)}</td>` : ''}
+      ${isAdmin() ? `<td>${badgeBoolean(client.listaNegra)}</td>` : ''}
       <td>
         <div class="cell-actions">
-          <button class="btn btn-outline" data-edit="${client.id}" type="button">Editar</button>
-          ${canDelete ? `<button class="btn btn-danger" data-del="${client.id}" type="button">Eliminar</button>` : ''}
+          <button class="btn btn-outline" data-follow="${client.id}" type="button">Seguimientos</button>
+          ${canOpenEdit ? `<button class="btn btn-outline" data-edit="${client.id}" type="button">Editar</button>` : ''}
+          ${canBlacklist ? `<button class="btn btn-danger" data-del="${client.id}" type="button">Lista negra</button>` : ''}
         </div>
       </td>
     `;
 
     clientsBody.appendChild(tr);
+  });
+
+  clientsBody.querySelectorAll('[data-follow]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const id = Number(button.getAttribute('data-follow'));
+      const client = currentClients.find((item) => item.id === id);
+
+      if (client) {
+        await openFollowUpModal(client);
+      }
+    });
   });
 
   clientsBody.querySelectorAll('[data-edit]').forEach((button) => {
@@ -202,7 +308,7 @@ function renderTable(clients) {
     button.addEventListener('click', async () => {
       const id = Number(button.getAttribute('data-del'));
 
-      if (!confirmAction(`¿Eliminar cliente #${id}?`)) return;
+      if (!confirmAction(`¿Poner cliente #${id} en lista negra?`)) return;
 
       try {
         await api.deleteClient(id);
@@ -214,6 +320,11 @@ function renderTable(clients) {
   });
 }
 
+/**
+ * =========================================================
+ * Load clients
+ * =========================================================
+ */
 export async function loadClients() {
   clientsMsg.textContent = 'Cargando...';
 
@@ -229,6 +340,11 @@ export async function loadClients() {
   }
 }
 
+/**
+ * =========================================================
+ * Bind global
+ * =========================================================
+ */
 export function bindClientEvents() {
   reloadBtn?.addEventListener('click', loadClients);
   createBtn?.addEventListener('click', openCreateModal);
@@ -249,8 +365,13 @@ export function bindClientEvents() {
         return;
       }
 
-      if (!id && (isAdmin() || isJefe()) && !payload.vendedorAsignadoId) {
-        showError(clientFormError, 'Debes seleccionar un vendedor asignado.');
+      /**
+       * CREATE
+       * ADMIN / JEFE / CARGADOR necesitan destino explícito.
+       * VENDEDOR no.
+       */
+      if (!id && (isAdmin() || isJefe() || isCargador()) && !payload.asignadoAId) {
+        showError(clientFormError, 'Debes seleccionar un destino asignado.');
         return;
       }
 

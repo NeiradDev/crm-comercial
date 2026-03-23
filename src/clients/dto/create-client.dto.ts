@@ -66,14 +66,22 @@ export class CreateClientDto {
   @IsString({ message: 'observaciones debe ser texto' })
   observaciones?: string;
 
+  /**
+   * =========================================================
+   * Usuario asignado
+   * ---------------------------------------------------------
+   * Puede ser JEFE o VENDEDOR según reglas del rol que crea.
+   * =========================================================
+   */
   @IsOptional()
   @Type(() => Number)
-  @IsInt({ message: 'vendedorAsignadoId debe ser un número entero' })
-  vendedorAsignadoId?: number;
+  @IsInt({ message: 'asignadoAId debe ser un número entero' })
+  asignadoAId?: number;
 
   /**
-   * El DTO lo acepta, pero el service decide
-   * si el rol puede usarlo o no.
+   * =========================================================
+   * Solo ADMIN lo puede usar realmente.
+   * =========================================================
    */
   @IsOptional()
   @IsBoolean({ message: 'listaNegra debe ser true o false' })

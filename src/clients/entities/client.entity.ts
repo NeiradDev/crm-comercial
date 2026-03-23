@@ -13,7 +13,9 @@ export class Client {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // ----- Datos personales -----
+  // =========================================================
+  // Datos personales
+  // =========================================================
   @Column()
   nombres: string;
 
@@ -26,7 +28,9 @@ export class Client {
   @Column({ nullable: true })
   numeroCliente: string;
 
-  // ----- Datos comerciales -----
+  // =========================================================
+  // Datos comerciales
+  // =========================================================
   @Column({ nullable: true })
   metodoPago: string;
 
@@ -42,7 +46,9 @@ export class Client {
   @Column({ nullable: true })
   resolucion: string;
 
-  // ----- Estados -----
+  // =========================================================
+  // Estados documentales / comerciales
+  // =========================================================
   @Column({ default: false })
   documentacionCompleta: boolean;
 
@@ -58,24 +64,40 @@ export class Client {
   @Column({ default: false })
   despachado: boolean;
 
-  // ----- Observaciones -----
+  // =========================================================
+  // Observaciones
+  // =========================================================
   @Column({ type: 'text', nullable: true })
   observaciones: string;
 
   /**
-   * Solo ADMIN la ve y la modifica
+   * =========================================================
+   * Estado lógico del cliente
+   * ---------------------------------------------------------
+   * false = cliente operativo
+   * true  = cliente restringido / no operativo
+   * =========================================================
    */
   @Column({ default: false })
   listaNegra: boolean;
 
-  // ----- Relaciones -----
+  // =========================================================
+  // Relaciones
+  // =========================================================
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'creadoPorId' })
   creadoPor: User;
 
+  /**
+   * =========================================================
+   * Usuario asignado
+   * ---------------------------------------------------------
+   * Puede ser JEFE o VENDEDOR.
+   * =========================================================
+   */
   @ManyToOne(() => User, { nullable: false })
-  @JoinColumn({ name: 'vendedorAsignadoId' })
-  vendedorAsignado: User;
+  @JoinColumn({ name: 'asignadoAId' })
+  asignadoA: User;
 
   @CreateDateColumn()
   fechaCreacion: Date;

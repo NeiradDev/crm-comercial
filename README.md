@@ -12,4 +12,9 @@
    docker-compose up -d
    ```
    6. Levantar: ```yarn start:dev```
+   7. Backup DB: ```docker exec -t DB-COMERCIAL pg_dump -U dev comercial-db > backup.sql```
+   ```
+   docker-compose up -d
+   ```
+   6. Cargar backup db: ```docker exec -i DB-COMERCIAL psql -U dev comercial-db < backup.sql```
 

@@ -11,6 +11,8 @@ import { AuthModule } from './auth/auth.module';
 
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
+import { SeguimientoClienteModule } from './seguimiento-cliente/seguimiento-cliente.module';
+
 
 @Module({
   imports: [
@@ -37,6 +39,7 @@ import { RolesGuard } from './auth/roles.guard';
     UsersModule,
     ClientsModule,
     AuthModule,
+    SeguimientoClienteModule,
   ],
   providers: [
     {
