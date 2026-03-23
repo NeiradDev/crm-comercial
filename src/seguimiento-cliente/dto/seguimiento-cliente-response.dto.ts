@@ -20,6 +20,16 @@ export class SeguimientoClienteResponseDto {
 
   observaciones?: string | null;
 
+  /**
+   * =========================================================
+   * NUEVO CAMPO
+   * ---------------------------------------------------------
+   * Días transcurridos desde esta gestión hasta hoy.
+   * Útil para vistas futuras.
+   * =========================================================
+   */
+  diasDesdeGestion?: number | null;
+
   client: {
     id: number;
     nombres: string;

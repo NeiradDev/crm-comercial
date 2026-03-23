@@ -276,7 +276,8 @@ function renderTable(clients) {
       ${isAdmin() ? `<td>${badgeBoolean(client.listaNegra)}</td>` : ''}
       <td>
         <div class="cell-actions">
-          <button class="btn btn-outline" data-follow="${client.id}" type="button">Seguimientos</button>
+          <!-- NOMBRES BOTONES DE ACCION-->
+          <button class="btn btn-outline" data-follow="${client.id}" type="button">Gestion</button>
           ${canOpenEdit ? `<button class="btn btn-outline" data-edit="${client.id}" type="button">Editar</button>` : ''}
           ${canBlacklist ? `<button class="btn btn-danger" data-del="${client.id}" type="button">Lista negra</button>` : ''}
         </div>

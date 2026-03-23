@@ -22,6 +22,17 @@ export class ClientResponseDto {
   asignadoA: UserSummaryDto | null;
 
   /**
+   * =========================================================
+   * NUEVO CAMPO
+   * ---------------------------------------------------------
+   * Días transcurridos desde la última gestión registrada
+   * del cliente.
+   * Si no tiene gestiones, irá null.
+   * =========================================================
+   */
+  diasDesdeUltimaGestion?: number | null;
+
+  /**
    * Solo ADMIN lo ve.
    */
   listaNegra?: boolean;

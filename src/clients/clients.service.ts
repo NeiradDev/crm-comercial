@@ -11,7 +11,8 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientResponseDto } from './dto/client-response.dto';
-import { UserSummaryDto } from '../users/dto/user-summary.dto';
+import { UserSummaryDto } from '../users/dto/user-summary.dto'
+import { SeguimientoCliente } from '../seguimiento-cliente/entities/seguimiento-cliente.entity';;
 
 type CurrentUser = { userId: number; role: UserRole };
 
@@ -23,6 +24,7 @@ export class ClientsService {
 
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    
   ) {}
 
   /**

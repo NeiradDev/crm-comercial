@@ -265,7 +265,7 @@ async function loadFollowUps() {
  */
 export async function openFollowUpModal(client) {
   currentClient = client;
-  title.textContent = `Seguimientos del cliente #${client.id}`;
+  title.textContent = `Gestiones del cliente #${client.id}`;
   clientInfo.textContent = `${client.nombres} ${client.apellidos} | DNI: ${client.dni}`;
 
   resetFollowUpForm();
