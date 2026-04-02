@@ -1,16 +1,6 @@
-import { api } from './api.js';
-import { $, badgeBoolean, setHidden, showError } from './ui.js';
+import { api } from '../core/api.js';
+import { $, badgeBoolean, setHidden, showError } from '../core/ui.js';
 
-/**
- * =========================================================
- * CATÁLOGOS DEL FORMULARIO
- * ---------------------------------------------------------
- * Se mantienen en front para:
- * - renderizar selects
- * - evitar escribir opciones a mano cada vez
- * - centralizar cambios
- * =========================================================
- */
 const FOLLOW_UP_OPTIONS = {
   origen: ['Facebook', 'Cuotitas', 'Contado', 'Tarjeta de Crédito'],
   metodoPago: ['Cuotitas', 'Contado', 'Tarjeta de Crédito'],
@@ -42,11 +32,6 @@ const FOLLOW_UP_OPTIONS = {
   ],
 };
 
-/**
- * =========================================================
- * ELEMENTOS DEL MODAL DE SEGUIMIENTO
- * =========================================================
- */
 const modal = $('#followUpModal');
 const overlay = $('#modalOverlay');
 const closeBtn = $('#followUpModalClose');
@@ -84,13 +69,26 @@ const fu_observaciones = $('#fu_observaciones');
 let currentClient = null;
 let currentFollowUps = [];
 
-/**
- * =========================================================
- * Helpers internos
- * =========================================================
- */
-function setBooleanSelectValue(selectElement, value) {
-  selectElement.value = value ? 'true' : 'false';
+function hasFollowUpDom() {
+  return Boolean(
+    modal &&
+    overlay &&
+    body &&
+    form &&
+    fu_clientId &&
+    fu_fecha &&
+    fu_origen &&
+    fu_metodoPago &&
+    fu_insistencia &&
+    fu_simulacion &&
+    fu_tipoCliente &&
+    fu_resolucion &&
+    fu_documentacion &&
+    fu_referencias &&
+    fu_verificacionIdentidad &&
+    fu_facturado &&
+    fu_despachado
+  );
 }
 
 function toBoolean(value) {
@@ -98,6 +96,8 @@ function toBoolean(value) {
 }
 
 function fillSelect(selectElement, options, placeholder = 'Seleccione una opción') {
+  if (!selectElement) return;
+
   selectElement.innerHTML = '';
 
   const first = document.createElement('option');
@@ -129,15 +129,14 @@ function fillAllCatalogs() {
   fillSelect(fu_resolucion, FOLLOW_UP_OPTIONS.resolucion);
   fillSelect(fu_documentacion, FOLLOW_UP_OPTIONS.documentacion);
   fillSelect(fu_referencias, FOLLOW_UP_OPTIONS.referencias);
-  fillSelect(
-    fu_verificacionIdentidad,
-    FOLLOW_UP_OPTIONS.verificacionIdentidad,
-  );
+  fillSelect(fu_verificacionIdentidad, FOLLOW_UP_OPTIONS.verificacionIdentidad);
   fillSelect(fu_facturado, FOLLOW_UP_OPTIONS.facturado);
   fillSelect(fu_despachado, FOLLOW_UP_OPTIONS.despachado);
 }
 
 function resetFollowUpForm() {
+  if (!hasFollowUpDom()) return;
+
   fu_id.value = '';
   fu_clientId.value = '';
   fu_fecha.value = new Date().toISOString().slice(0, 10);
@@ -158,11 +157,14 @@ function resetFollowUpForm() {
 }
 
 function openModal() {
+  if (!modal || !overlay) return;
   setHidden(modal, false);
   setHidden(overlay, false);
 }
 
 function closeModal() {
+  if (!modal || !overlay) return;
+
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
@@ -172,20 +174,17 @@ function closeModal() {
 }
 
 function showListView() {
+  if (!listView || !formView) return;
   setHidden(listView, false);
   setHidden(formView, true);
 }
 
 function showFormView() {
+  if (!listView || !formView) return;
   setHidden(listView, true);
   setHidden(formView, false);
 }
 
-/**
- * =========================================================
- * Payload
- * =========================================================
- */
 function getFollowUpPayload() {
   return {
     clientId: Number(fu_clientId.value),
@@ -202,16 +201,13 @@ function getFollowUpPayload() {
     verificacionIdentidad: fu_verificacionIdentidad.value,
     facturado: toBoolean(fu_facturado.value),
     despachado: toBoolean(fu_despachado.value),
-    observaciones: fu_observaciones.value.trim() || undefined,
+    observaciones: fu_observaciones?.value?.trim() || undefined,
   };
 }
 
-/**
- * =========================================================
- * Render de tabla de seguimientos
- * =========================================================
- */
 function renderFollowUps(items) {
+  if (!body) return;
+
   body.innerHTML = '';
 
   items.forEach((item) => {
@@ -235,13 +231,8 @@ function renderFollowUps(items) {
   });
 }
 
-/**
- * =========================================================
- * Carga lista de seguimientos de un cliente
- * =========================================================
- */
 async function loadFollowUps() {
-  if (!currentClient) return;
+  if (!currentClient || !body || !msg) return;
 
   msg.textContent = 'Cargando seguimientos...';
 
@@ -258,14 +249,14 @@ async function loadFollowUps() {
   }
 }
 
-/**
- * =========================================================
- * Abrir modal principal
- * =========================================================
- */
 export async function openFollowUpModal(client) {
+  if (!hasFollowUpDom()) {
+    console.warn('El DOM de seguimientos todavía no existe en esta vista.');
+    return;
+  }
+
   currentClient = client;
-  title.textContent = `Gestiones del cliente #${client.id}`;
+  title.textContent = `Seguimientos del cliente #${client.id}`;
   clientInfo.textContent = `${client.nombres} ${client.apellidos} | DNI: ${client.dni}`;
 
   resetFollowUpForm();
@@ -276,12 +267,9 @@ export async function openFollowUpModal(client) {
   await loadFollowUps();
 }
 
-/**
- * =========================================================
- * Preparar formulario nuevo
- * =========================================================
- */
 function openNewFollowUpForm() {
+  if (!hasFollowUpDom()) return;
+
   resetFollowUpForm();
 
   if (currentClient) {
@@ -292,12 +280,12 @@ function openNewFollowUpForm() {
   showFormView();
 }
 
-/**
- * =========================================================
- * Eventos públicos del módulo
- * =========================================================
- */
 export function bindFollowUpEvents() {
+  if (!hasFollowUpDom()) {
+    console.warn('followups.js: no se encontró el DOM del módulo de seguimientos. Se omite el bind.');
+    return;
+  }
+
   fillAllCatalogs();
 
   closeBtn?.addEventListener('click', closeModal);
@@ -317,23 +305,17 @@ export function bindFollowUpEvents() {
     try {
       const payload = getFollowUpPayload();
 
-      /**
-       * Validación mínima visual
-       */
       if (
         !payload.clientId ||
         !payload.fecha ||
         !payload.origen ||
         !payload.metodoPago ||
         !payload.insistencia ||
-        payload.simulacion === undefined ||
         !payload.tipoCliente ||
         !payload.resolucion ||
         !payload.documentacion ||
         !payload.referencias ||
-        !payload.verificacionIdentidad ||
-        payload.facturado === undefined ||
-        payload.despachado === undefined
+        !payload.verificacionIdentidad
       ) {
         showError(formError, 'Completa todos los campos obligatorios del seguimiento.');
         return;

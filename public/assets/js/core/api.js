@@ -25,11 +25,6 @@ async function parseResponse(res) {
 }
 
 export const api = {
-  /**
-   * =========================================================
-   * AUTH
-   * =========================================================
-   */
   async login(email, password) {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -40,11 +35,9 @@ export const api = {
     return parseResponse(res);
   },
 
-  /**
-   * =========================================================
-   * CLIENTS
-   * =========================================================
-   */
+  // =======================================================
+  // CLIENTES
+  // =======================================================
   async listClients() {
     const res = await fetch('/api/clients', {
       headers: { ...getAuthHeaders() },
@@ -97,13 +90,13 @@ export const api = {
   },
 
   /**
-   * =========================================================
-   * Destinos asignables
-   * ---------------------------------------------------------
+   * =======================================================
+   * Destinos asignables reales del backend
+   * -------------------------------------------------------
    * ADMIN    -> jefes + vendedores
    * JEFE     -> él mismo + sus vendedores
    * CARGADOR -> jefes
-   * =========================================================
+   * =======================================================
    */
   async listAssignableTargets() {
     const res = await fetch('/api/clients/assignable-targets', {
@@ -113,11 +106,9 @@ export const api = {
     return parseResponse(res);
   },
 
-  /**
-   * =========================================================
-   * FOLLOW UPS
-   * =========================================================
-   */
+  // =======================================================
+  // SEGUIMIENTOS
+  // =======================================================
   async listFollowUpsByClient(clientId) {
     const res = await fetch(`/api/seguimiento-cliente/client/${clientId}`, {
       headers: { ...getAuthHeaders() },
@@ -152,11 +143,9 @@ export const api = {
     return parseResponse(res);
   },
 
-  /**
-   * =========================================================
-   * USERS
-   * =========================================================
-   */
+  // =======================================================
+  // USUARIOS
+  // =======================================================
   async listUsers() {
     const res = await fetch('/api/users', {
       headers: { ...getAuthHeaders() },

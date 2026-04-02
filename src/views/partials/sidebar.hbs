@@ -1,0 +1,20 @@
+<aside class="app-sidebar">
+  <div class="sidebar-brand">
+    <h2>CRM</h2>
+    <p>Navegación principal</p>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="/admin" class="sidebar-link {{#if (eq currentPage 'admin')}}active{{/if}}">
+      Dashboard admin
+    </a>
+
+    <a href="/supervisor" class="sidebar-link {{#if (eq currentPage 'supervisor')}}active{{/if}}">
+      Dashboard supervisor
+    </a>
+
+    <a href="/vendor" class="sidebar-link {{#if (eq currentPage 'vendor')}}active{{/if}}">
+      Dashboard vendedor
+    </a>
+  </nav>
+</aside>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{pageTitle}}</title>
+
+  {{!-- CSS global del sistema --}}
+  <link rel="stylesheet" href="/assets/css/core.css" />
+  <link rel="stylesheet" href="/assets/css/layout.css" />
+  <link rel="stylesheet" href="/assets/css/login.css" />
+</head>
+<body class="{{bodyClass}}" data-page="{{currentPage}}" data-role="{{currentRole}}">
+
+  {{#unless hideNavbar}}
+    {{> navbar}}
+  {{/unless}}
+
+  <div class="app-shell">
+    {{#unless hideSidebar}}
+      {{> sidebar}}
+    {{/unless}}
+
+    <main class="app-content">
+      {{{body}}}
+    </main>
+  </div>
+
+  {{> modals}}
+
+  {{!-- JS global --}}
+  <script src="/assets/js/core/session.js"></script>
+  <script src="/assets/js/core/layout.js"></script>
+</body>
+</html>

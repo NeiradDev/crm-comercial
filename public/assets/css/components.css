@@ -1,122 +1,14 @@
-:root{
-  --bg:#0b132b;
-  --card:#1c2541;
-  --card-soft:#223056;
-  --input-bg:#0b132b;
-  --accent:#5bc0be;
-  --accent-hover:#7ad7d5;
-  --text:#e0e1dd;
-  --muted:#9aa0a6;
-  --border:#2b3a67;
-  --border-soft:#243b55;
-  --danger:#ff7b7b;
-  --success:#8ee28e;
-  --shadow:0 10px 24px rgba(0,0,0,.22);
-  --radius:12px;
-  --radius-sm:8px;
-}
-
-*{
-  box-sizing:border-box;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
-}
-
-html, body{
-  margin:0;
-  padding:0;
-  min-height:100%;
-  background:var(--bg);
-  color:var(--text);
-}
-
-body{
-  display:flex;
-  flex-direction:column;
-}
-
-.hidden{
-  display:none !important;
-}
-
-/* =========================================================
-   TOPBAR
-   ========================================================= */
-.topbar{
-  display:flex;
-  align-items:center;
-  gap:16px;
-  justify-content:space-between;
-  padding:14px 24px;
-  background:var(--card);
-  border-bottom:1px solid var(--border-soft);
-  position:sticky;
-  top:0;
-  z-index:10;
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  min-width:0;
-}
-
-.logo{
-  width:44px;
-  height:44px;
-  object-fit:contain;
-  flex-shrink:0;
-}
-
-.login{
-  width: 450px;;
-  height: 150px;
-  object-fit:contain;
-  flex-shrink:0;
-}
-
-.topbar h1{
-  margin:0;
-  font-size:1.15rem;
-  line-height:1.1;
-}
-
-.subtitle{
-  margin:4px 0 0;
-  color:var(--muted);
-  font-size:.95rem;
-}
-
-.session{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-}
-
-#roleBadge{
-  color:var(--muted);
-  font-size:.95rem;
-  text-align:right;
-}
-
-/* =========================================================
-   LAYOUT GENERAL
-   ========================================================= */
-.container{
-  width:100%;
-  max-width:1680px;
-  margin:0 auto;
-  padding:28px 32px 40px;
-}
-
-.card{
+.card,
+.login-card,
+.modal-card{
   width:100%;
   background:var(--card);
   border:1px solid var(--border);
   border-radius:18px;
   box-shadow:var(--shadow);
+}
+
+.card{
   padding:26px;
   margin-bottom:24px;
 }
@@ -126,8 +18,26 @@ body{
   margin-inline:auto;
 }
 
+.page-section{
+  width:100%;
+}
+
+.page-head,
 .section-head{
   margin-bottom:18px;
+}
+
+.page-head h2,
+.section-head h2,
+.section-head h3{
+  margin:0 0 6px;
+  font-size:1.1rem;
+  color:var(--text);
+}
+
+.page-head p,
+.section-head p{
+  color:var(--muted);
 }
 
 .section-head-inline{
@@ -138,25 +48,31 @@ body{
   flex-wrap:wrap;
 }
 
-.section-head h2,
-.section-head h3{
-  margin:0 0 6px;
-  font-size:1.1rem;
+.card-grid{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:16px;
 }
 
-.muted{
+.card-grid .card,
+.card-grid article{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  padding:22px;
+}
+
+.card-grid h3{
+  margin:0 0 8px;
+  font-size:1.02rem;
+}
+
+.card-grid p{
+  margin:0;
   color:var(--muted);
 }
 
-.error{
-  color:var(--danger);
-  margin:0;
-  white-space:pre-wrap;
-}
-
-/* =========================================================
-   FORMULARIOS
-   ========================================================= */
 .form-grid{
   display:grid;
   gap:16px;
@@ -171,6 +87,7 @@ body{
 label{
   font-size:.95rem;
   font-weight:600;
+  color:var(--text);
 }
 
 input,
@@ -183,6 +100,11 @@ textarea{
   background:var(--input-bg);
   color:var(--text);
   outline:none;
+}
+
+input::placeholder,
+textarea::placeholder{
+  color:#8b93a3;
 }
 
 input:focus,
@@ -213,9 +135,6 @@ textarea{
   margin:0;
 }
 
-/* =========================================================
-   BOTONES Y TOOLBARS
-   ========================================================= */
 .toolbar{
   display:flex;
   align-items:center;
@@ -235,6 +154,11 @@ textarea{
   cursor:pointer;
   transition:.18s ease;
   font-weight:600;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
 }
 
 .btn:hover{
@@ -258,6 +182,17 @@ textarea{
   border-color:#51638f;
 }
 
+.btn-soft{
+  border-color:var(--border);
+  background:rgba(255,255,255,.03);
+  color:var(--text);
+}
+
+.btn-soft:hover{
+  background:rgba(255,255,255,.06);
+  border-color:var(--accent);
+}
+
 .btn-danger{
   border-color:var(--danger);
   color:var(--danger);
@@ -267,9 +202,6 @@ textarea{
   background:rgba(255,123,123,.1);
 }
 
-/* =========================================================
-   TABLAS
-   ========================================================= */
 .table-wrap{
   width:100%;
   overflow-x:auto;
@@ -305,6 +237,7 @@ textarea{
   background:#16203c;
   z-index:1;
   font-size:1rem;
+  color:var(--text);
 }
 
 .cell-actions{
@@ -332,10 +265,8 @@ textarea{
   color:var(--muted);
 }
 
-/* =========================================================
-   MODALES
-   ========================================================= */
-.modal-overlay{
+.modal-overlay,
+.modal-backdrop{
   position:fixed;
   inset:0;
   background:rgba(0,0,0,.45);
@@ -355,10 +286,6 @@ textarea{
   width:min(820px, 100%);
   max-height:calc(100vh - 32px);
   overflow:auto;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:16px;
-  box-shadow:var(--shadow);
   padding:24px;
 }
 
@@ -370,28 +297,19 @@ textarea{
   grid-column:1 / -1;
 }
 
-/* =========================================================
-   TABS / MÓDULOS
-   ========================================================= */
-#navTabs{
-  margin-bottom:0;
-}
-
-#navTabs .btn{
-  min-width:150px;
-}
-
-/* =========================================================
-   RESPONSIVE
-   ========================================================= */
 @media (max-width: 1200px){
   .container{
     max-width:100%;
-    padding:24px 20px 36px;
   }
 
   .card{
     padding:22px;
+  }
+}
+
+@media (max-width: 992px){
+  .card-grid{
+    grid-template-columns:1fr;
   }
 }
 
@@ -406,23 +324,9 @@ textarea{
 }
 
 @media (max-width: 720px){
-  .topbar{
-    flex-direction:column;
-    align-items:flex-start;
-  }
-
-  .session{
-    width:100%;
-    justify-content:space-between;
-  }
-
   .section-head-inline{
     flex-direction:column;
     align-items:stretch;
-  }
-
-  .container{
-    padding:18px 14px 28px;
   }
 
   .card{

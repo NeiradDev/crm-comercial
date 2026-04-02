@@ -1,28 +1,21 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_GUARD } from '@nestjs/core';
-import { join } from 'path';
 
 import { UsersModule } from './users/users.module';
 import { ClientsModule } from './clients/clients.module';
 import { AuthModule } from './auth/auth.module';
+import { SeguimientoClienteModule } from './seguimiento-cliente/seguimiento-cliente.module';
+import { PagesModule } from './pages/pages.module';
 
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
-import { SeguimientoClienteModule } from './seguimiento-cliente/seguimiento-cliente.module';
-
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-    }),
-
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'public'),
-      exclude: ['/api(.*)'],
     }),
 
     TypeOrmModule.forRoot({
@@ -40,6 +33,7 @@ import { SeguimientoClienteModule } from './seguimiento-cliente/seguimiento-clie
     ClientsModule,
     AuthModule,
     SeguimientoClienteModule,
+    PagesModule,
   ],
   providers: [
     {

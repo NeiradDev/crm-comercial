@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, RequestMethod } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { join } from 'path';
@@ -9,18 +9,34 @@ async function bootstrap() {
 
   /**
    * =========================================================
-   * PREFIJO GLOBAL DE API
+   * PREFIJO GLOBAL SOLO PARA API
+   * ---------------------------------------------------------
+   * Excluimos las rutas SSR públicas del frontend:
+   * - /
+   * - /login
+   * - /admin
+   * - /supervisor
+   * - /vendor
+   *
+   * Así:
+   * - la API sigue bajo /api/*
+   * - las páginas SSR quedan en sus rutas normales
    * =========================================================
    */
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: [
+      { path: '', method: RequestMethod.GET },
+      { path: '/', method: RequestMethod.GET },
+      { path: 'login', method: RequestMethod.GET },
+      { path: 'admin', method: RequestMethod.GET },
+      { path: 'supervisor', method: RequestMethod.GET },
+      { path: 'vendor', method: RequestMethod.GET },
+    ],
+  });
 
   /**
    * =========================================================
    * VALIDACIÓN GLOBAL
-   * ---------------------------------------------------------
-   * whitelist: elimina campos no definidos en los DTOs
-   * forbidNonWhitelisted: lanza error si mandan campos extra
-   * transform: transforma tipos cuando es posible
    * =========================================================
    */
   app.useGlobalPipes(
@@ -33,20 +49,23 @@ async function bootstrap() {
 
   /**
    * =========================================================
-   * FRONTEND ESTÁTICO
+   * ASSETS ESTÁTICOS
    * ---------------------------------------------------------
-   * Si no es ruta /api, servimos index.html
+   * Solo assets:
+   * - /assets/css/*
+   * - /assets/js/*
+   * - /img/*
    * =========================================================
    */
   app.useStaticAssets(join(process.cwd(), 'public'));
 
-  app.use((req, res, next) => {
-    if (req.originalUrl.startsWith('/api')) {
-      return next();
-    }
-
-    return res.sendFile(join(process.cwd(), 'public', 'index.html'));
-  });
+  /**
+   * =========================================================
+   * VISTAS SSR
+   * =========================================================
+   */
+  app.setBaseViewsDir(join(process.cwd(), 'src/views'));
+  app.setViewEngine('hbs');
 
   await app.listen(process.env.PORT || 3000);
 }
