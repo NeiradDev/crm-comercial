@@ -19,7 +19,7 @@
 >
   <header class="dashboard-topbar">
     <div class="dashboard-brand">
-      <img src="/img/logo.png" alt="CRM BESTPC" class="dashboard-logo" />
+      <img src="/img/novacrm_horizontal.svg" alt="CRM BESTPC" class="dashboard-logo" />
 
       <div class="dashboard-brand-copy">
         <h1>Manager UK</h1>
@@ -81,29 +81,106 @@
     <!-- =====================================================
          PLACEHOLDERS RESTANTES
     ====================================================== -->
-    <section id="usersSection" class="card dashboard-section hidden">
-      <div class="section-head">
-        <h3>Usuarios</h3>
-        <p class="muted">Pendiente de conectar.</p>
-      </div>
+<section id="usersSection" class="card dashboard-section hidden">
+  <div class="section-head section-head-inline users-head">
+    <div>
+      <h3>Usuarios</h3>
+      <p class="muted" id="usersMsg">Cargando...</p>
+    </div>
 
-      <div class="placeholder-box">
-        <p class="placeholder-title">Módulo pendiente</p>
-        <p class="placeholder-text">La siguiente conexión real será usuarios.</p>
-      </div>
-    </section>
+    <div class="toolbar wrap">
+      <button id="reloadUsers" class="btn btn-outline" type="button">
+        Recargar
+      </button>
+    </div>
+  </div>
 
-    <section id="createUserSection" class="card dashboard-section hidden">
-      <div class="section-head">
-        <h3>Crear usuario</h3>
-        <p class="muted">Pendiente de conectar.</p>
-      </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>Cédula</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Jefe</th>
+          <th>Estado</th>
+          <th>Creado</th>
+          <th id="usersActionsHead">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+  </div>
+</section>
 
-      <div class="placeholder-box">
-        <p class="placeholder-title">Formulario pendiente</p>
-        <p class="placeholder-text">Primero consolidamos clientes y luego creación de usuarios.</p>
-      </div>
-    </section>
+<section id="createUserSection" class="card dashboard-section hidden">
+  <div class="section-head">
+    <h3>Crear usuario</h3>
+    <p class="muted">
+      Solo administrador puede crear usuarios. Para vendedores, el jefe es obligatorio.
+    </p>
+  </div>
+
+  <form id="createUserForm" class="form-grid">
+    <div class="form-row">
+      <label for="cu_nombre">Nombre</label>
+      <input id="cu_nombre" type="text" placeholder="Nombre" />
+    </div>
+
+    <div class="form-row">
+      <label for="cu_apellido">Apellido</label>
+      <input id="cu_apellido" type="text" placeholder="Apellido" />
+    </div>
+
+    <div class="form-row">
+      <label for="cu_cedula">Cédula</label>
+      <input id="cu_cedula" type="text" placeholder="0102030405" />
+    </div>
+
+    <div class="form-row">
+      <label for="cu_email">Email</label>
+      <input id="cu_email" type="email" placeholder="nuevo@crm.com" />
+    </div>
+
+    <div class="form-row">
+      <label for="cu_password">Contraseña</label>
+      <input id="cu_password" type="password" placeholder="123456" />
+    </div>
+
+    <div class="form-row">
+      <label for="cu_role">Rol</label>
+      <select id="cu_role">
+        <option value="">Seleccione un rol</option>
+        <option value="JEFE">JEFE</option>
+        <option value="VENDEDOR">VENDEDOR</option>
+        <option value="CARGADOR">CARGADOR</option>
+      </select>
+    </div>
+
+    <div class="form-row hidden" id="createUserJefeRow">
+      <label for="cu_jefeId">Jefe asignado</label>
+      <select id="cu_jefeId">
+        <option value="">Seleccione un jefe</option>
+      </select>
+    </div>
+
+    <div class="form-row checkbox-row">
+      <label class="checkbox-inline">
+        <input id="cu_activo" type="checkbox" checked />
+        <span>Activo</span>
+      </label>
+    </div>
+
+    <p id="createUserError" class="error"></p>
+
+    <div class="toolbar wrap">
+      <button class="btn btn-primary" type="submit">Crear usuario</button>
+    </div>
+  </form>
+</section>
 
     <section id="importSection" class="card dashboard-section hidden">
       <div class="section-head">

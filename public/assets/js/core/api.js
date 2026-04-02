@@ -187,4 +187,13 @@ export const api = {
 
     return parseResponse(res);
   },
+
+  async deactivateUser(id) {
+  const res = await fetch(`/api/users/${id}`, {
+    method: 'DELETE',
+    headers: { ...getAuthHeaders() },
+  });
+
+  return parseResponse(res);
+},
 };

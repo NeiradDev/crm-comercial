@@ -53,12 +53,13 @@ body.dashboard-page {
 }
 
 .dashboard-logo {
-  width: 150px;
+  width: auto;
+  max-width: 180px;
   height: 50px;
   object-fit: contain;
   border-radius: 14px;
-  
   background: rgba(255, 255, 255, 0.1);
+  display: block;
 }
 
 .dashboard-brand-copy h1 {
@@ -294,3 +295,30 @@ body.dashboard-page {
   CLIENTES / TOOLBAR INTEGRADA AL TEMA 
 ========================================================= */ 
 .clients-head { align-items: flex-start; gap: 18px; } .clients-head-copy { min-width: 240px; } .clients-toolbar-shell { margin-left: auto; display: flex; align-items: center; justify-content: flex-end; gap: 14px 18px; flex-wrap: wrap; width: min(100%, 980px); } .clients-toolbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .clients-toolbar-tools { display: flex; flex-direction: column; gap: 10px; flex: 1 1 520px; min-width: 320px; } .clients-search-wrap { width: 100%; } .clients-search-input, .clients-page-size { width: 100%; min-height: 46px; padding: 0 14px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.045); color: var(--dashboard-text); outline: none; transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease; } .clients-search-input::placeholder { color: var(--dashboard-muted); } .clients-search-input:focus, .clients-page-size:focus { border-color: rgba(37, 99, 235, 0.42); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); background: rgba(255, 255, 255, 0.06); } .clients-toolbar-bottom { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .clients-page-size { flex: 0 0 180px; cursor: pointer; } .clients-pagination-box { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; } .clients-page-btn { min-width: 44px; padding: 0 12px; } .clients-page-indicator { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.10); background: rgba(255, 255, 255, 0.045); color: var(--dashboard-text); font-weight: 700; white-space: nowrap; } .table-empty-cell { text-align: center; padding: 22px 14px; color: var(--dashboard-muted); } @media (max-width: 1180px) { .clients-head { flex-direction: column; align-items: stretch; } .clients-toolbar-shell { width: 100%; margin-left: 0; justify-content: flex-start; } } @media (max-width: 780px) { .clients-toolbar-shell { flex-direction: column; align-items: stretch; } .clients-toolbar-actions, .clients-toolbar-tools, .clients-toolbar-bottom { width: 100%; } .clients-toolbar-actions .btn { flex: 1 1 160px; } .clients-page-size { flex: 1 1 100%; } .clients-pagination-box { width: 100%; margin-left: 0; justify-content: space-between; } .clients-page-indicator { flex: 1 1 auto; } }
+/* =========================================================
+   USUARIOS / ESTADOS
+========================================================= */
+
+.users-state-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.users-state-badge.is-active {
+  color: #d1fae5;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.users-state-badge.is-inactive {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+}

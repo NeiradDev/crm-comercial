@@ -1,272 +1,311 @@
-import { api } from './api.js';
-import { isAdmin } from './session.js';
-import { $, setHidden, showError } from './ui.js';
+import { api } from '../core/api.js';
+import { getSession, isAdmin, isSupervisor } from '../core/session.js';
+import { $, confirmAction, setHidden, showError } from '../core/ui.js';
 
-const tabClients = $('#tabClients');
-const tabUsers = $('#tabUsers');
-const tabCreateUser = $('#tabCreateUser');
-
-const clientsSection = $('#clientsSection');
-const usersSection = $('#usersSection');
-const createUserSection = $('#createUserSection');
-
-const vendorsMsg = $('#vendorsMsg');
-const vendorsBody = $('#vendorsBody');
-const reloadVendors = $('#reloadVendors');
+const usersMsg = $('#usersMsg');
+const usersBody = $('#usersBody');
+const reloadUsers = $('#reloadUsers');
+const usersActionsHead = $('#usersActionsHead');
 
 const createUserForm = $('#createUserForm');
 const createUserError = $('#createUserError');
+const cu_nombre = $('#cu_nombre');
+const cu_apellido = $('#cu_apellido');
+const cu_cedula = $('#cu_cedula');
 const cu_email = $('#cu_email');
 const cu_password = $('#cu_password');
 const cu_role = $('#cu_role');
 const cu_jefeId = $('#cu_jefeId');
+const cu_activo = $('#cu_activo');
 const createUserJefeRow = $('#createUserJefeRow');
-
-const userEditModal = $('#userEditModal');
-const userEditClose = $('#userEditClose');
-const editUserCancel = $('#editUserCancel');
-const editUserForm = $('#editUserForm');
-const editUserError = $('#editUserError');
-const eu_id = $('#eu_id');
-const eu_email = $('#eu_email');
-const eu_password = $('#eu_password');
-const eu_role = $('#eu_role');
-const eu_jefeId = $('#eu_jefeId');
-const editUserJefeRow = $('#editUserJefeRow');
 
 let currentUsers = [];
 let currentJefes = [];
 
-function activateTab(button) {
-  [tabClients, tabUsers, tabCreateUser].forEach((btn) => {
-    if (!btn) return;
-    btn.classList.remove('btn-primary');
-  });
-
-  button?.classList.add('btn-primary');
+function hasUsersDom() {
+  return Boolean(usersMsg && usersBody && reloadUsers);
 }
 
-function showSection(section) {
-  [clientsSection, usersSection, createUserSection].forEach((sec) => {
-    if (sec) setHidden(sec, sec !== section);
-  });
+function hasCreateUserDom() {
+  return Boolean(
+    createUserForm &&
+      cu_nombre &&
+      cu_apellido &&
+      cu_cedula &&
+      cu_email &&
+      cu_password &&
+      cu_role &&
+      cu_jefeId &&
+      createUserJefeRow &&
+      createUserError,
+  );
 }
 
-export function bindTabEventsAdmin({ onShowClients }) {
-  tabClients?.addEventListener('click', async () => {
-    activateTab(tabClients);
-    showSection(clientsSection);
-    await onShowClients?.();
-  });
+function formatBoss(user) {
+  if (!user?.jefe) {
+    return '-';
+  }
 
-  tabUsers?.addEventListener('click', async () => {
-    activateTab(tabUsers);
-    showSection(usersSection);
-    await loadUsersAdmin();
-  });
+  const name = [user.jefe.nombre, user.jefe.apellido].filter(Boolean).join(' ').trim();
 
-  tabCreateUser?.addEventListener('click', async () => {
-    activateTab(tabCreateUser);
-    showSection(createUserSection);
-    await loadJefesForCreate();
-  });
+  if (name && user.jefe.email) {
+    return `${name} (${user.jefe.email})`;
+  }
+
+  return name || user.jefe.email || `ID ${user.jefe.id}`;
 }
 
-export function bindTabEventsJefe({ onShowClients }) {
-  tabClients?.addEventListener('click', async () => {
-    activateTab(tabClients);
-    showSection(clientsSection);
-    await onShowClients?.();
-  });
+function formatDate(value) {
+  if (!value) {
+    return '-';
+  }
 
-  tabUsers?.addEventListener('click', async () => {
-    activateTab(tabUsers);
-    showSection(usersSection);
-    await loadMyVendors();
-  });
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return date.toLocaleString();
+}
+
+function stateBadge(user) {
+  return user?.activo
+    ? '<span class="users-state-badge is-active">Activo</span>'
+    : '<span class="users-state-badge is-inactive">Inactivo</span>';
 }
 
 function resetCreateUserForm() {
-  if (!createUserForm) return;
+  if (!hasCreateUserDom()) {
+    return;
+  }
 
+  cu_nombre.value = '';
+  cu_apellido.value = '';
+  cu_cedula.value = '';
   cu_email.value = '';
   cu_password.value = '';
   cu_role.value = '';
-  cu_jefeId.innerHTML = '';
-  showError(createUserError, '');
+  cu_activo.checked = true;
+  cu_jefeId.innerHTML = '<option value="">Seleccione un jefe</option>';
   setHidden(createUserJefeRow, true);
+  showError(createUserError, '');
 }
 
-function resetEditUserForm() {
-  eu_id.value = '';
-  eu_email.value = '';
-  eu_password.value = '';
-  eu_role.value = 'VENDEDOR';
-  eu_jefeId.innerHTML = '';
-  showError(editUserError, '');
-  setHidden(editUserJefeRow, true);
-}
-
-function openEditModal() {
-  setHidden(userEditModal, false);
-  setHidden($('#modalOverlay'), false);
-}
-
-function closeEditModal() {
-  if (document.activeElement instanceof HTMLElement) {
-    document.activeElement.blur();
+function fillBossSelect(selectedId = null) {
+  if (!cu_jefeId) {
+    return;
   }
 
-  setHidden(userEditModal, true);
-  setHidden($('#modalOverlay'), true);
-}
+  cu_jefeId.innerHTML = '<option value="">Seleccione un jefe</option>';
 
-function fillJefeSelect(selectElement, selectedId = null) {
-  if (!selectElement) return;
-
-  selectElement.innerHTML = '<option value="">Seleccione un jefe</option>';
-
-  currentJefes.forEach((jefe) => {
+  currentJefes.forEach((boss) => {
     const option = document.createElement('option');
-    option.value = String(jefe.id);
-    option.textContent = `${jefe.email} (id: ${jefe.id})`;
+    option.value = String(boss.id);
+    option.textContent = `${boss.nombre} ${boss.apellido} (${boss.email})`;
 
-    if (selectedId && jefe.id === selectedId) {
+    if (selectedId && Number(selectedId) === Number(boss.id)) {
       option.selected = true;
     }
 
-    selectElement.appendChild(option);
+    cu_jefeId.appendChild(option);
   });
 }
 
-async function loadJefesForCreate() {
-  if (!isAdmin()) return;
+async function loadBossesForCreate() {
+  if (!isAdmin()) {
+    return;
+  }
 
   const users = await api.listUsers();
-  currentJefes = users.filter((u) => u.role === 'JEFE');
+  currentJefes = users.filter((user) => user.role === 'JEFE' && user.activo);
+  fillBossSelect();
+}
 
-  if (cu_role?.value === 'VENDEDOR') {
-    fillJefeSelect(cu_jefeId);
-    setHidden(createUserJefeRow, false);
+function getCreatePayload() {
+  const payload = {
+    nombre: cu_nombre.value.trim(),
+    apellido: cu_apellido.value.trim(),
+    cedula: cu_cedula.value.trim(),
+    email: cu_email.value.trim(),
+    password: cu_password.value.trim(),
+    role: cu_role.value,
+    activo: cu_activo.checked,
+  };
+
+  if (payload.role === 'VENDEDOR') {
+    const jefeId = Number(cu_jefeId.value || 0);
+
+    if (jefeId) {
+      payload.jefeId = jefeId;
+    }
   }
+
+  return payload;
 }
 
-async function loadJefesForEdit(selectedId = null) {
-  if (!isAdmin()) return;
-
-  const users = await api.listUsers();
-  currentJefes = users.filter((u) => u.role === 'JEFE');
-  fillJefeSelect(eu_jefeId, selectedId);
+function renderEmptyUsersState(message) {
+  usersBody.innerHTML = `
+    <tr>
+      <td colspan="${isAdmin() ? 10 : 9}" class="table-empty-cell">
+        ${message}
+      </td>
+    </tr>
+  `;
 }
 
-export async function loadUsersAdmin() {
-  vendorsMsg.textContent = 'Cargando...';
-  vendorsBody.innerHTML = '';
+function bindUserRowActions() {
+  if (!isAdmin()) {
+    return;
+  }
+
+  usersBody.querySelectorAll('[data-deactivate-user]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const id = Number(button.getAttribute('data-deactivate-user'));
+      const currentSession = getSession();
+
+      if (id === Number(currentSession.userId)) {
+        usersMsg.textContent = 'No puedes desactivarte a ti mismo desde esta pantalla.';
+        return;
+      }
+
+      if (!confirmAction(`¿Desactivar usuario #${id}?`)) {
+        return;
+      }
+
+      try {
+        await api.deactivateUser(id);
+        await loadUsersForCurrentRole();
+      } catch (error) {
+        usersMsg.textContent = error.message || 'No se pudo desactivar el usuario.';
+      }
+    });
+  });
+}
+
+function renderUsersTable(users) {
+  setHidden(usersActionsHead, !isAdmin());
+  usersBody.innerHTML = '';
+
+  if (!users.length) {
+    renderEmptyUsersState(
+      isAdmin()
+        ? 'No hay usuarios para mostrar.'
+        : 'No tienes vendedores asignados.',
+    );
+    return;
+  }
+
+  users.forEach((user) => {
+    const tr = document.createElement('tr');
+
+    tr.innerHTML = `
+      <td>${user.id}</td>
+      <td>${user.nombre ?? '-'}</td>
+      <td>${user.apellido ?? '-'}</td>
+      <td>${user.cedula ?? '-'}</td>
+      <td>${user.email ?? '-'}</td>
+      <td>${user.role ?? '-'}</td>
+      <td>${formatBoss(user)}</td>
+      <td>${stateBadge(user)}</td>
+      <td>${formatDate(user.createdAt)}</td>
+      ${
+        isAdmin()
+          ? `
+            <td>
+              <div class="cell-actions">
+                <button
+                  class="btn btn-danger"
+                  data-deactivate-user="${user.id}"
+                  type="button"
+                  ${user.activo ? '' : 'disabled'}
+                >
+                  ${user.activo ? 'Desactivar' : 'Inactivo'}
+                </button>
+              </div>
+            </td>
+          `
+          : ''
+      }
+    `;
+
+    usersBody.appendChild(tr);
+  });
+
+  bindUserRowActions();
+}
+
+export async function loadUsersForCurrentRole() {
+  if (!hasUsersDom()) {
+    console.warn('users.js: no existe el DOM del módulo de usuarios.');
+    return;
+  }
+
+  usersMsg.textContent = 'Cargando...';
+  usersBody.innerHTML = '';
 
   try {
-    let users = await api.listUsers();
-    users = users.filter((u) => u.role === 'JEFE' || u.role === 'VENDEDOR');
-    currentUsers = users;
+    let users = [];
 
-    vendorsMsg.textContent = users.length ? '' : 'No hay usuarios disponibles.';
+    if (isAdmin()) {
+      users = await api.listUsers();
+    } else if (isSupervisor()) {
+      users = await api.listMyVendors();
+    } else {
+      users = [];
+    }
 
-    users.forEach((user) => {
-      const tr = document.createElement('tr');
+    currentUsers = Array.isArray(users) ? users : [];
 
-      tr.innerHTML = `
-        <td>${user.id}</td>
-        <td>${user.email}</td>
-        <td>${user.role}</td>
-        <td>${user.jefe?.email ?? '-'}</td>
-        <td>${user.createdAt ?? '-'}</td>
-        <td>
-          <div class="cell-actions">
-            <button class="btn btn-outline" data-edit-user="${user.id}" type="button">Editar</button>
-          </div>
-        </td>
-      `;
+    usersMsg.textContent = currentUsers.length
+      ? ''
+      : isAdmin()
+        ? 'No hay usuarios disponibles.'
+        : 'No tienes vendedores asignados.';
 
-      vendorsBody.appendChild(tr);
-    });
-
-    vendorsBody.querySelectorAll('[data-edit-user]').forEach((button) => {
-      button.addEventListener('click', async () => {
-        const id = Number(button.getAttribute('data-edit-user'));
-        await openEditUser(id);
-      });
-    });
+    renderUsersTable(currentUsers);
   } catch (error) {
-    vendorsMsg.textContent = error.message;
+    currentUsers = [];
+    usersBody.innerHTML = '';
+    usersMsg.textContent = error.message || 'No se pudieron cargar los usuarios.';
+    console.error('loadUsersForCurrentRole error:', error);
   }
 }
 
-export async function loadMyVendors() {
-  vendorsMsg.textContent = 'Cargando...';
-  vendorsBody.innerHTML = '';
-
-  try {
-    const users = await api.listMyVendors();
-    currentUsers = users;
-
-    vendorsMsg.textContent = users.length ? '' : 'No tienes vendedores asignados.';
-
-    users.forEach((user) => {
-      const tr = document.createElement('tr');
-
-      tr.innerHTML = `
-        <td>${user.id}</td>
-        <td>${user.email}</td>
-        <td>${user.role}</td>
-        <td>${user.jefe?.email ?? '-'}</td>
-        <td>${user.createdAt ?? '-'}</td>
-      `;
-
-      vendorsBody.appendChild(tr);
-    });
-  } catch (error) {
-    vendorsMsg.textContent = error.message;
-  }
-}
-
-async function openEditUser(id) {
-  const user = currentUsers.find((item) => item.id === id);
-  if (!user) return;
-
-  resetEditUserForm();
-
-  eu_id.value = String(user.id);
-  eu_email.value = user.email ?? '';
-  eu_role.value = user.role ?? 'VENDEDOR';
-
-  if (user.role === 'VENDEDOR') {
-    await loadJefesForEdit(user.jefe?.id ?? null);
-    setHidden(editUserJefeRow, false);
-  } else {
-    setHidden(editUserJefeRow, true);
-    eu_jefeId.innerHTML = '';
+export async function prepareCreateUserSection() {
+  if (!hasCreateUserDom()) {
+    return;
   }
 
-  openEditModal();
+  if (!isAdmin()) {
+    resetCreateUserForm();
+    return;
+  }
+
+  resetCreateUserForm();
+  await loadBossesForCreate();
 }
 
 export function bindUserEvents() {
-  reloadVendors?.addEventListener('click', async () => {
-    if (isAdmin()) {
-      await loadUsersAdmin();
-    } else {
-      await loadMyVendors();
-    }
-  });
+  if (hasUsersDom()) {
+    reloadUsers?.addEventListener('click', async () => {
+      await loadUsersForCurrentRole();
+    });
+  }
+
+  if (!hasCreateUserDom()) {
+    return;
+  }
 
   cu_role?.addEventListener('change', async () => {
     showError(createUserError, '');
 
     if (cu_role.value === 'VENDEDOR') {
-      await loadJefesForCreate();
+      await loadBossesForCreate();
       setHidden(createUserJefeRow, false);
     } else {
       setHidden(createUserJefeRow, true);
-      cu_jefeId.innerHTML = '';
+      cu_jefeId.innerHTML = '<option value="">Seleccione un jefe</option>';
     }
   });
 
@@ -274,87 +313,49 @@ export function bindUserEvents() {
     e.preventDefault();
     showError(createUserError, '');
 
-    try {
-      const payload = {
-        email: cu_email.value.trim(),
-        password: cu_password.value.trim(),
-        role: cu_role.value,
-      };
+    if (!isAdmin()) {
+      showError(createUserError, 'Solo administrador puede crear usuarios.');
+      return;
+    }
 
-      if (!payload.email || !payload.password || !payload.role) {
-        showError(createUserError, 'Email, contraseña y rol son obligatorios.');
+    try {
+      const payload = getCreatePayload();
+
+      if (
+        !payload.nombre ||
+        !payload.apellido ||
+        !payload.cedula ||
+        !payload.email ||
+        !payload.password ||
+        !payload.role
+      ) {
+        showError(
+          createUserError,
+          'Nombre, apellido, cédula, email, contraseña y rol son obligatorios.',
+        );
         return;
       }
 
-      if (payload.role === 'VENDEDOR') {
-        const jefeId = Number(cu_jefeId.value || 0);
-        if (!jefeId) {
-          showError(createUserError, 'Debes seleccionar un jefe para el vendedor.');
-          return;
-        }
-        payload.jefeId = jefeId;
+      if (payload.role === 'VENDEDOR' && !payload.jefeId) {
+        showError(
+          createUserError,
+          'Para crear un vendedor debes seleccionar un jefe.',
+        );
+        return;
       }
 
       await api.createUser(payload);
+
+      // =====================================================
+      // Refrescar catálogo de jefes por si acabas de crear uno
+      // =====================================================
+      await loadBossesForCreate();
       resetCreateUserForm();
-      await loadUsersAdmin();
-      activateTab(tabUsers);
-      showSection(usersSection);
+      await loadUsersForCurrentRole();
+
+      showError(createUserError, 'Usuario creado correctamente.');
     } catch (error) {
-      showError(createUserError, error.message);
-    }
-  });
-
-  userEditClose?.addEventListener('click', closeEditModal);
-  editUserCancel?.addEventListener('click', closeEditModal);
-
-  eu_role?.addEventListener('change', async () => {
-    showError(editUserError, '');
-
-    if (eu_role.value === 'VENDEDOR') {
-      await loadJefesForEdit();
-      setHidden(editUserJefeRow, false);
-    } else {
-      setHidden(editUserJefeRow, true);
-      eu_jefeId.innerHTML = '';
-    }
-  });
-
-  editUserForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showError(editUserError, '');
-
-    try {
-      const id = Number(eu_id.value || 0);
-      if (!id) {
-        showError(editUserError, 'No se encontró el id del usuario.');
-        return;
-      }
-
-      const payload = {
-        email: eu_email.value.trim(),
-        role: eu_role.value,
-      };
-
-      const password = eu_password.value.trim();
-      if (password) {
-        payload.password = password;
-      }
-
-      if (payload.role === 'VENDEDOR') {
-        const jefeId = Number(eu_jefeId.value || 0);
-        if (!jefeId) {
-          showError(editUserError, 'Debes seleccionar un jefe para el vendedor.');
-          return;
-        }
-        payload.jefeId = jefeId;
-      }
-
-      await api.updateUser(id, payload);
-      closeEditModal();
-      await loadUsersAdmin();
-    } catch (error) {
-      showError(editUserError, error.message);
+      showError(createUserError, error.message || 'No se pudo crear el usuario.');
     }
   });
 }

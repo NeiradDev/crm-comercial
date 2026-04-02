@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1280" height="360" viewBox="0 0 1280 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="novaGradient" x1="40" y1="40" x2="260" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="0.55" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
+    <linearGradient id="goldAccent" x1="110" y1="68" x2="170" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FACC15"/>
+      <stop offset="1" stop-color="#EAB308"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .wordmark { font-family: Inter, Segoe UI, Arial, sans-serif; }
+    </style>
+  </defs>
+
+  <!-- FULL LOGO -->
+  <g id="full-logo" transform="translate(40,40)">
+    <!-- icon container -->
+    <g id="icon">
+      <!-- abstract enterprise/pipeline form -->
+      <path d="M38 176C38 100.889 98.8888 40 174 40H176C194.778 40 210 55.2223 210 74V188C210 205.673 195.673 220 178 220H82C57.6995 220 38 200.301 38 176Z"
+            fill="url(#novaGradient)" opacity="0.96"/>
+      <!-- inner data/pipeline cut -->
+      <path d="M88 164V119C88 98.0132 105.013 81 126 81H147C167.987 81 185 98.0132 185 119V141C185 161.987 167.987 179 147 179H101C93.8203 179 88 173.18 88 166Z"
+            fill="#0F172A" fill-opacity="0.92"/>
+      <!-- rising path / growth -->
+      <path d="M95 161L125 132L145 146L183 104" stroke="#67E8F9" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" filter="url(#softGlow)"/>
+      <!-- connected nodes -->
+      <circle cx="95" cy="161" r="10" fill="#A5F3FC"/>
+      <circle cx="125" cy="132" r="10" fill="#7DD3FC"/>
+      <circle cx="145" cy="146" r="10" fill="#38BDF8"/>
+      <circle cx="183" cy="104" r="10" fill="#FACC15"/>
+      <!-- premium accent -->
+      <path d="M177 68L194 85L177 102L160 85L177 68Z" fill="url(#goldAccent)"/>
+    </g>
+
+    <!-- wordmark -->
+    <g id="wordmark" transform="translate(270,58)">
+      <text class="wordmark" x="0" y="78" font-size="82" font-weight="800" letter-spacing="-2.2" fill="#E5E7EB">Nova</text>
+      <text class="wordmark" x="218" y="78" font-size="82" font-weight="800" letter-spacing="-2.2" fill="#67E8F9">CRM</text>
+      <text class="wordmark" x="4" y="124" font-size="24" font-weight="500" letter-spacing="3.4" fill="#94A3B8">COMMERCIAL SALES PLATFORM</text>
+    </g>
+  </g>
+
+  <!-- ICON ONLY -->
+  <g id="icon-only" transform="translate(1030,60)">
+    <rect x="0" y="0" width="190" height="190" rx="42" fill="#111827"/>
+    <path d="M24 136C24 74.1441 74.1441 24 136 24H136.5C151.136 24 163 35.8645 163 50.5V145C163 159.912 150.912 172 136 172H60C40.1177 172 24 155.882 24 136Z"
+          fill="url(#novaGradient)"/>
+    <path d="M62 127V90C62 73.4315 75.4315 60 92 60H109C125.569 60 139 73.4315 139 90V107C139 123.569 125.569 137 109 137H72C66.4772 137 62 132.523 62 127Z"
+          fill="#0F172A" fill-opacity="0.95"/>
+    <path d="M68 123L89 102L104 112L138 79" stroke="#67E8F9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="68" cy="123" r="7" fill="#A5F3FC"/>
+    <circle cx="89" cy="102" r="7" fill="#7DD3FC"/>
+    <circle cx="104" cy="112" r="7" fill="#38BDF8"/>
+    <circle cx="138" cy="79" r="7" fill="#FACC15"/>
+    <path d="M132 42L145 55L132 68L119 55L132 42Z" fill="url(#goldAccent)"/>
+  </g>
+</svg>

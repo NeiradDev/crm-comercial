@@ -3,6 +3,11 @@ import { clearSession, getSession } from '../core/session.js';
 import { ROLE_CONFIG } from '../core/role-config.js';
 import { bindClientEvents, loadClients } from '../modules/clients.js';
 import { bindFollowUpEvents } from '../modules/followups.js';
+import {
+  bindUserEvents,
+  loadUsersForCurrentRole,
+  prepareCreateUserSection,
+} from '../modules/users.js';
 
 const body = document.body;
 
@@ -64,6 +69,17 @@ async function onTabActivated(tabKey) {
 
   if (tabKey === 'clients') {
     await loadClients();
+    return;
+  }
+
+  if (tabKey === 'users') {
+    await loadUsersForCurrentRole();
+    return;
+  }
+
+  if (tabKey === 'createUser') {
+    await prepareCreateUserSection();
+    return;
   }
 }
 
@@ -146,8 +162,12 @@ async function boot() {
 
   const session = getSession();
 
+  // =======================================================
+  // Se conectan TODOS los módulos base del dashboard
+  // =======================================================
   bindClientEvents();
   bindFollowUpEvents();
+  bindUserEvents();
 
   const config = renderShell(session);
   bindLogout();
