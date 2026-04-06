@@ -4,11 +4,17 @@
 
 #test 
    1. Clonar proyecto
-   2. ```yarn install```
-   3. ```yarn add hbs```
-   4. Clonar el archivo ```.env.template``` y renombrarlo a ```.env```
-   5. Cambiar las variables de entorno
-   6. Levantar la base de datos
+   2.
+   ```
+      yarn install
+   ```
+   5.
+   ```
+      yarn add hbs
+   ```
+   7. Clonar el archivo ```.env.template``` y renombrarlo a ```.env```
+   8. Cambiar las variables de entorno
+   9. Levantar la base de datos
    ```
    docker-compose up -d
    ```
